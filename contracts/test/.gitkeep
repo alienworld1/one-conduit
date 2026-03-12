@@ -1,0 +1,6 @@
+// SPDX-License-Identifier: MIT
+pragma solidity ^0.8.28;
+
+// Placeholder — Foundry unit tests live here (Module 3+).
+// Tests run against Anvil (EVM), not PVM. That is expected behaviour.
+// See docs/SETUP.md — "Known Gotchas" section.
