@@ -3,14 +3,12 @@ src = "src"
 out = "out"
 libs = ["lib"]
 solc_version = "0.8.28"
-
-[profile.default.polkadot]
-# Enable Revive compiler for PVM output.
-# `resolc` must be on $PATH. See docs/SETUP.md for install steps.
+# resolc_compile = true enables PVM output via the Revive compiler.
+# resolc must be on $PATH (installed at ~/.cargo/bin/resolc).
 resolc_compile = true
 
 [rpc_endpoints]
-polkadot-testnet = "https://testnet-passet-hub-eth-rpc.polkadot.io"
+polkadot-testnet = "https://eth-rpc-testnet.polkadot.io/"
 
 [etherscan]
 polkadot-testnet = { key = "", url = "https://blockscout-testnet.polkadot.io/api?" }
