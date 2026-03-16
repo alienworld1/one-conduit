@@ -7,19 +7,22 @@
 
 | Contract | Address | Deployed At |
 |---|---|---|
-| `ConduitRegistry` | _pending deployment_ | — |
+| `ConduitRegistry` | 0xa5E8c0Bf7b2caf0F9A779D1B32640DC88AC258A2 | 0x6cfab407fbf90ec287ce63afd4a70e9027a1ee27b986bcf895e68c4eba554ada |
 
-## Module 3 — LocalLendingAdapter
+## Module 3 — LocalLendingAdapter + MockLendingPool
 
 | Contract | Address | Deployed At |
 |---|---|---|
-| `LocalLendingAdapter` | _pending_ | — |
+| `MockERC20` (mUSDC — canonical USDC stand-in) | 0x5FAfa9c09BC5d6b79fF0e3dBC0AaaB651eEB894C | — |
+| `MockYieldToken` (cYLD — deployed by MockLendingPool) | 0x256Ca433e024Ed7baB26a1fE6aC0658636C2749B | — |
+| `MockLendingPool` | 0x430819D80517A1Dbe98b47cF70FC951163Ceed5b | — |
+| `LocalLendingAdapter` | 0x5b50eaE5Fd7b3e09687938FA9D69ccc6a9200746 | — |
 
 ## Module 4 — RiskOracle (ink! v6 / Rust)
 
 | Contract | Address | Deployed At |
 |---|---|---|
-| `RiskOracle` | _pending_ | — |
+| `RiskOracle` | 0x6Bee0885A5d7c621215AD773a8c692a1bD16Aa60 | — |
 
 ## Module 5 — ConduitRouter
 

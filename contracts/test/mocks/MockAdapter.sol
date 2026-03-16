@@ -35,4 +35,8 @@ contract MockAdapter is IYieldAdapter {
     function isXCM() external pure returns (bool) {
         return false;
     }
+
+    function yieldToken() external pure returns (address) {
+        return address(2); // stub — not used in registry-level tests
+    }
 }

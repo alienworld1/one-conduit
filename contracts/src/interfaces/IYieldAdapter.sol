@@ -30,4 +30,8 @@ interface IYieldAdapter {
 
     /// @notice Returns true if this adapter routes via XCM (async, two-phase settlement).
     function isXCM() external view returns (bool);
+
+    /// @notice The ERC-20 token this adapter issues to depositors (yield token / receipt token).
+    ///         ConduitRouter uses this to pull yield tokens from the caller on withdrawal.
+    function yieldToken() external view returns (address);
 }
