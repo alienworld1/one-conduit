@@ -1,41 +1,60 @@
-# Deployed Contract Addresses — Paseo Passet Hub
+# OneConduit — Deployed Addresses
 
-Network: Paseo Passet Hub  
-Chain ID: 420420417  
-Explorer: https://blockscout-testnet.polkadot.io
+**Network:** Paseo Passet Hub
+**Chain ID:** (Paseo Passet Hub testnet)
+
+## Module 2 — ConduitRegistry + IYieldAdapter
+
+| Contract | Address | Deployed At |
+|---|---|---|
+| `ConduitRegistry` | _pending deployment_ | — |
+
+## Module 3 — LocalLendingAdapter
+
+| Contract | Address | Deployed At |
+|---|---|---|
+| `LocalLendingAdapter` | _pending_ | — |
+
+## Module 4 — RiskOracle (ink! v6 / Rust)
+
+| Contract | Address | Deployed At |
+|---|---|---|
+| `RiskOracle` | _pending_ | — |
+
+## Module 5 — ConduitRouter
+
+| Contract | Address | Deployed At |
+|---|---|---|
+| `ConduitRouter` | _pending_ | — |
+
+## Module 6 — XCMAdapter + EscrowVault + PendingReceiptNFT
+
+| Contract | Address | Deployed At |
+|---|---|---|
+| `XCMAdapter` | _pending_ | — |
+| `EscrowVault` | _pending_ | — |
+| `PendingReceiptNFT` | _pending_ | — |
 
 ---
 
-## Module 0 — Toolchain Validation
+## Post-deployment verification commands
 
-| Contract | Address | Deploy Tx | Notes |
-|---|---|---|---|
-| HelloPVM | `pending` | `pending` | Solidity → PVM pipeline |
-| HelloInk | `pending` | `pending` | ink! v6 → PVM pipeline |
-| HelloCaller | `pending` | `pending` | Cross-VM caller |
+```bash
+# Verify ConduitRegistry is empty after deploy
+cast call <REGISTRY_ADDRESS> "getProductCount()(uint256)" --rpc-url $ETH_RPC_URL
 
-**Cross-VM validation tx:** `pending`
+# Register a test adapter
+cast send <REGISTRY_ADDRESS> \
+  "registerAdapter(bytes32,address,string,bool)" \
+  <PRODUCT_ID_BYTES32> <ADAPTER_ADDRESS> "Test Product" false \
+  --private-key $PRIVATE_KEY --rpc-url $ETH_RPC_URL
 
-> Replace `pending` entries with actual values after each deployment.
-> See `docs/SETUP.md` for deployment commands.
+# Push metadata
+cast send <REGISTRY_ADDRESS> \
+  "pushMetadata(bytes32,uint256,uint256,uint256)" \
+  <PRODUCT_ID_BYTES32> 500 1000000 5000 \
+  --private-key $PRIVATE_KEY --rpc-url $ETH_RPC_URL
 
----
-
-## Module 1 — RiskOracle (TODO)
-
-| Contract | Address | Deploy Tx | Notes |
-|---|---|---|---|
-| RiskOracle.rs (ink!) | — | — | Not yet deployed |
-
----
-
-## Module 2 — Core Contracts (TODO)
-
-| Contract | Address | Deploy Tx | Notes |
-|---|---|---|---|
-| ConduitRegistry | — | — | Not yet deployed |
-| ConduitRouter | — | — | Not yet deployed |
-| EscrowVault | — | — | Not yet deployed |
-| PendingReceiptNFT | — | — | Not yet deployed |
-| XCMAdapter | — | — | Not yet deployed |
-| LocalLendingAdapter | — | — | Not yet deployed |
+# Read all products
+cast call <REGISTRY_ADDRESS> "getAllProducts()" --rpc-url $ETH_RPC_URL
+```
