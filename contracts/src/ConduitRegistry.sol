@@ -29,9 +29,9 @@ error ZeroProductId();
 
 struct AdapterInfo {
     address adapterAddress;
-    string  name;
-    bool    isXCM;
-    bool    active;
+    string name;
+    bool isXCM;
+    bool active;
     uint256 registeredAt; // block.timestamp at registration
 }
 
@@ -42,31 +42,22 @@ struct AdapterInfo {
 struct ProductView {
     bytes32 productId;
     address adapterAddress;
-    string  name;
-    bool    isXCM;
-    uint256 apyBps;         // from cachedAPY
-    uint256 tvlUSD;         // from cachedTVL
+    string name;
+    bool isXCM;
+    uint256 apyBps; // from cachedAPY
+    uint256 tvlUSD; // from cachedTVL
     uint256 utilizationBps; // from cachedUtilization
-    uint256 lastUpdated;    // block.timestamp of last pushMetadata call
-    uint256 riskScore;      // always 0 until Module 4 — placeholder field, do not remove
+    uint256 lastUpdated; // block.timestamp of last pushMetadata call
+    uint256 riskScore; // always 0 until Module 4 — placeholder field, do not remove
 }
 
 // ─── Events ────────────────────────────────────────────────────────────────────
 
-event AdapterRegistered(
-    bytes32 indexed productId,
-    address indexed adapter,
-    string  name,
-    bool    isXCM
-);
+event AdapterRegistered(bytes32 indexed productId, address indexed adapter, string name, bool isXCM);
 
 event AdapterDeactivated(bytes32 indexed productId);
 
-event MetadataUpdated(
-    bytes32 indexed productId,
-    uint256 apyBps,
-    uint256 tvlUSD
-);
+event MetadataUpdated(bytes32 indexed productId, uint256 apyBps, uint256 tvlUSD);
 
 // ─── Contract ──────────────────────────────────────────────────────────────────
 
@@ -86,10 +77,10 @@ contract ConduitRegistry {
     bytes32[] private productIds; // append-only; deactivation does NOT remove entries
 
     // ── APY/TVL cache — push model ─────────────────────────────────────────────
-    mapping(bytes32 => uint256) public cachedAPY;          // apyBps
-    mapping(bytes32 => uint256) public cachedTVL;          // tvlUSD
-    mapping(bytes32 => uint256) public cachedUtilization;  // utilizationBps
-    mapping(bytes32 => uint256) public lastUpdated;        // block.timestamp of last push
+    mapping(bytes32 => uint256) public cachedAPY; // apyBps
+    mapping(bytes32 => uint256) public cachedTVL; // tvlUSD
+    mapping(bytes32 => uint256) public cachedUtilization; // utilizationBps
+    mapping(bytes32 => uint256) public lastUpdated; // block.timestamp of last push
 
     // ── Constructor ────────────────────────────────────────────────────────────
 
@@ -104,12 +95,7 @@ contract ConduitRegistry {
     /// @param adapter    Address of the deployed adapter contract.
     /// @param name       Human-readable product name (stored on-chain for getAllProducts).
     /// @param xcm        True if this adapter routes via XCM (async two-phase settlement).
-    function registerAdapter(
-        bytes32 productId,
-        address adapter,
-        string calldata name,
-        bool    xcm
-    ) external onlyOwner {
+    function registerAdapter(bytes32 productId, address adapter, string calldata name, bool xcm) external onlyOwner {
         if (productId == bytes32(0)) revert ZeroProductId();
         if (adapter == address(0)) revert ZeroAddress();
         // Block both active and deactivated re-registration to prevent ID reuse.
@@ -117,13 +103,8 @@ contract ConduitRegistry {
             revert ProductAlreadyRegistered(productId);
         }
 
-        adapters[productId] = AdapterInfo({
-            adapterAddress: adapter,
-            name:           name,
-            isXCM:          xcm,
-            active:         true,
-            registeredAt:   block.timestamp
-        });
+        adapters[productId] =
+            AdapterInfo({adapterAddress: adapter, name: name, isXCM: xcm, active: true, registeredAt: block.timestamp});
         productIds.push(productId);
 
         emit AdapterRegistered(productId, adapter, name, xcm);
@@ -143,24 +124,16 @@ contract ConduitRegistry {
     /// @dev Access: owner OR the registered adapter itself.
     ///      Allowing adapter-push makes the demo cleaner (adapters self-report live data)
     ///      and is more architecturally honest. Both paths are trusted in v1.
-    function pushMetadata(
-        bytes32 productId,
-        uint256 apyBps,
-        uint256 tvlUSD,
-        uint256 utilizationBps
-    ) external {
+    function pushMetadata(bytes32 productId, uint256 apyBps, uint256 tvlUSD, uint256 utilizationBps) external {
         AdapterInfo storage info = adapters[productId];
         if (!info.active) revert ProductNotFound(productId);
         // Only owner or the adapter itself may push.
-        require(
-            msg.sender == owner || msg.sender == info.adapterAddress,
-            "not owner or adapter"
-        );
+        require(msg.sender == owner || msg.sender == info.adapterAddress, "not owner or adapter");
 
-        cachedAPY[productId]         = apyBps;
-        cachedTVL[productId]         = tvlUSD;
+        cachedAPY[productId] = apyBps;
+        cachedTVL[productId] = tvlUSD;
         cachedUtilization[productId] = utilizationBps;
-        lastUpdated[productId]       = block.timestamp;
+        lastUpdated[productId] = block.timestamp;
 
         emit MetadataUpdated(productId, apyBps, tvlUSD);
     }
@@ -199,15 +172,15 @@ contract ConduitRegistry {
             if (!info.active) continue;
 
             result[idx] = ProductView({
-                productId:      pid,
+                productId: pid,
                 adapterAddress: info.adapterAddress,
-                name:           info.name,
-                isXCM:          info.isXCM,
-                apyBps:         cachedAPY[pid],
-                tvlUSD:         cachedTVL[pid],
+                name: info.name,
+                isXCM: info.isXCM,
+                apyBps: cachedAPY[pid],
+                tvlUSD: cachedTVL[pid],
                 utilizationBps: cachedUtilization[pid],
-                lastUpdated:    lastUpdated[pid],
-                riskScore:      0 // TODO(Module 4): wire in RiskOracle.getScore(pid)
+                lastUpdated: lastUpdated[pid],
+                riskScore: 0 // TODO(Module 4): wire in RiskOracle.getScore(pid)
             });
             idx++;
         }

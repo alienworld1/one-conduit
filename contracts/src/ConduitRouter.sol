@@ -2,9 +2,9 @@
 pragma solidity ^0.8.28;
 
 import {ConduitRegistry, AdapterInfo} from "./ConduitRegistry.sol";
-import {IYieldAdapter}                from "./interfaces/IYieldAdapter.sol";
-import {IRiskOracle}                  from "./interfaces/IRiskOracle.sol";
-import {IERC20}                       from "./interfaces/IERC20.sol";
+import {IYieldAdapter} from "./interfaces/IYieldAdapter.sol";
+import {IRiskOracle} from "./interfaces/IRiskOracle.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
 
 /*
  * ConduitRouter — single entry-point for all OneConduit yield operations.
@@ -40,34 +40,16 @@ error NotImplemented();
 
 // ── Events ────────────────────────────────────────────────────────────────────
 
-event Deposited(
-    address indexed user,
-    bytes32 indexed productId,
-    uint256 amountIn,
-    uint256 tokensOut
-);
+event Deposited(address indexed user, bytes32 indexed productId, uint256 amountIn, uint256 tokensOut);
 
-event Withdrawn(
-    address indexed user,
-    bytes32 indexed productId,
-    uint256 tokensIn,
-    uint256 amountOut
-);
+event Withdrawn(address indexed user, bytes32 indexed productId, uint256 tokensIn, uint256 amountOut);
 
 // XCMDispatched emitted by XCMAdapter in Module 4 — declared here for ABI completeness.
 event XCMDispatched(
-    address indexed user,
-    bytes32 indexed productId,
-    uint256 amount,
-    uint256 receiptId,
-    bytes32 xcmMsgHash
+    address indexed user, bytes32 indexed productId, uint256 amount, uint256 receiptId, bytes32 xcmMsgHash
 );
 
-event Settled(
-    address indexed holder,
-    uint256 indexed receiptId,
-    uint256 amountReleased
-);
+event Settled(address indexed holder, uint256 indexed receiptId, uint256 amountReleased);
 
 // ── Contract ──────────────────────────────────────────────────────────────────
 
@@ -77,9 +59,9 @@ contract ConduitRouter {
     address public owner;
 
     constructor(address _registry, address _riskOracle) {
-        registry   = _registry;
+        registry = _registry;
         riskOracle = _riskOracle;
-        owner      = msg.sender;
+        owner = msg.sender;
     }
 
     // ─── Core actions ─────────────────────────────────────────────────────────

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 import {IYieldAdapter} from "./interfaces/IYieldAdapter.sol";
-import {ILendingPool}  from "./interfaces/ILendingPool.sol";
-import {IERC20}        from "./interfaces/IERC20.sol";
+import {ILendingPool} from "./interfaces/ILendingPool.sol";
+import {IERC20} from "./interfaces/IERC20.sol";
 
 /*
  * LocalLendingAdapter — IYieldAdapter wrapper for a Hub-native Aave-style lending pool.
@@ -28,8 +28,7 @@ import {IERC20}        from "./interfaces/IERC20.sol";
 
 // Minimal registry interface — avoids importing ConduitRegistry and its file-level declarations.
 interface IConduitRegistry {
-    function pushMetadata(bytes32 productId, uint256 apyBps, uint256 tvlUSD, uint256 utilizationBps)
-        external;
+    function pushMetadata(bytes32 productId, uint256 apyBps, uint256 tvlUSD, uint256 utilizationBps) external;
 }
 
 // Extended pool interface with getExchangeRate() for quote calculation.
@@ -45,8 +44,8 @@ contract LocalLendingAdapter is IYieldAdapter {
     bytes32 public immutable productId;
 
     constructor(address _pool, address _registry, bytes32 _productId) {
-        pool      = ILendingPool(_pool);
-        registry  = _registry;
+        pool = ILendingPool(_pool);
+        registry = _registry;
         productId = _productId;
     }
 
@@ -106,11 +105,6 @@ contract LocalLendingAdapter is IYieldAdapter {
 
     function pushMetadata() external {
         if (registry == address(0)) return;
-        IConduitRegistry(registry).pushMetadata(
-            productId,
-            pool.getAPY(),
-            pool.getTVL(),
-            pool.getUtilizationRate()
-        );
+        IConduitRegistry(registry).pushMetadata(productId, pool.getAPY(), pool.getTVL(), pool.getUtilizationRate());
     }
 }

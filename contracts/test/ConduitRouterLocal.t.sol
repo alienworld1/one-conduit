@@ -4,13 +4,13 @@ pragma solidity ^0.8.28;
 import {Test} from "forge-std/Test.sol";
 
 import {ConduitRouter, RiskScoreTooLow, Deposited} from "../src/ConduitRouter.sol";
-import {ConduitRegistry, ProductNotFound}          from "../src/ConduitRegistry.sol";
-import {LocalLendingAdapter}  from "../src/LocalLendingAdapter.sol";
-import {MockLendingPool}      from "../src/MockLendingPool.sol";
-import {MockERC20}            from "../src/mocks/MockERC20.sol";
-import {MockYieldToken}       from "../src/mocks/MockYieldToken.sol";
-import {ProductIds}           from "../src/libraries/ProductIds.sol";
-import {MockRiskOracle}       from "./mocks/MockRiskOracle.sol";
+import {ConduitRegistry, ProductNotFound} from "../src/ConduitRegistry.sol";
+import {LocalLendingAdapter} from "../src/LocalLendingAdapter.sol";
+import {MockLendingPool} from "../src/MockLendingPool.sol";
+import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockYieldToken} from "../src/mocks/MockYieldToken.sol";
+import {ProductIds} from "../src/libraries/ProductIds.sol";
+import {MockRiskOracle} from "./mocks/MockRiskOracle.sol";
 
 /*
  * ConduitRouterLocal.t.sol — Module 4 unit tests for the local deposit path.
@@ -22,34 +22,34 @@ import {MockRiskOracle}       from "./mocks/MockRiskOracle.sol";
  * call is verified separately via cast against Paseo Passet Hub after deployment.
  */
 contract ConduitRouterLocalTest is Test {
-    ConduitRouter       router;
-    ConduitRegistry     reg;
+    ConduitRouter router;
+    ConduitRegistry reg;
     LocalLendingAdapter adapter;
-    MockLendingPool     pool;
-    MockERC20           mockUSDC;
-    MockRiskOracle      oracle;
-    MockYieldToken      yt;
+    MockLendingPool pool;
+    MockERC20 mockUSDC;
+    MockRiskOracle oracle;
+    MockYieldToken yt;
 
     address constant alice = address(0xA11CE);
 
-    bytes32 constant PRODUCT        = ProductIds.USDC_HUB_LENDING_V1;
-    uint256 constant USER_BALANCE   = 10_000e6;
+    bytes32 constant PRODUCT = ProductIds.USDC_HUB_LENDING_V1;
+    uint256 constant USER_BALANCE = 10_000e6;
     uint256 constant DEPOSIT_AMOUNT = 1_000e6;
-    uint256 constant DEFAULT_SCORE  = 75;
-    uint256 constant DEFAULT_MIN    = 50;
+    uint256 constant DEFAULT_SCORE = 75;
+    uint256 constant DEFAULT_MIN = 50;
 
     function setUp() public {
         // Tokens + pool
         mockUSDC = new MockERC20("Mock USDC", "mUSDC");
-        pool     = new MockLendingPool(address(mockUSDC), 500); // 5% APY
-        yt       = MockYieldToken(pool.yieldToken());
+        pool = new MockLendingPool(address(mockUSDC), 500); // 5% APY
+        yt = MockYieldToken(pool.yieldToken());
 
         // Yield reserve — pool holds extra underlying to cover index-growth payouts.
         // Supply-only mock has no borrowers, so reserve must be seeded manually.
         mockUSDC.mint(address(pool), 1_000_000e6);
 
         // Infrastructure
-        reg    = new ConduitRegistry();
+        reg = new ConduitRegistry();
         oracle = new MockRiskOracle();
         router = new ConduitRouter(address(reg), address(oracle));
 
@@ -192,7 +192,7 @@ contract ConduitRouterLocalTest is Test {
     function test_withdraw_success() public {
         _deposit(DEPOSIT_AMOUNT, DEFAULT_MIN);
 
-        uint256 shares    = yt.balanceOf(alice);
+        uint256 shares = yt.balanceOf(alice);
         uint256 usdcBefore = mockUSDC.balanceOf(alice);
 
         vm.startPrank(alice);

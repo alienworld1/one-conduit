@@ -3,14 +3,21 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ConduitRouter, RiskScoreTooLow, NotImplemented, DepositReturnedZero, Deposited, Withdrawn} from "../src/ConduitRouter.sol";
+import {
+    ConduitRouter,
+    RiskScoreTooLow,
+    NotImplemented,
+    DepositReturnedZero,
+    Deposited,
+    Withdrawn
+} from "../src/ConduitRouter.sol";
 import {ConduitRegistry, AdapterInfo, ProductNotFound} from "../src/ConduitRegistry.sol";
-import {LocalLendingAdapter}     from "../src/LocalLendingAdapter.sol";
-import {MockLendingPool}         from "../src/MockLendingPool.sol";
-import {MockERC20}               from "../src/mocks/MockERC20.sol";
-import {MockYieldToken}          from "../src/mocks/MockYieldToken.sol";
-import {ProductIds}              from "../src/libraries/ProductIds.sol";
-import {MockRiskOracle}          from "./mocks/MockRiskOracle.sol";
+import {LocalLendingAdapter} from "../src/LocalLendingAdapter.sol";
+import {MockLendingPool} from "../src/MockLendingPool.sol";
+import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockYieldToken} from "../src/mocks/MockYieldToken.sol";
+import {ProductIds} from "../src/libraries/ProductIds.sol";
+import {MockRiskOracle} from "./mocks/MockRiskOracle.sol";
 
 // File-level symbols in scope via transitive imports:
 //   ProductNotFound (ConduitRegistry.sol)
@@ -19,28 +26,28 @@ import {MockRiskOracle}          from "./mocks/MockRiskOracle.sol";
 //              MockLendingPool's Deposited event, which takes address as second param)
 
 contract ConduitRouterTest is Test {
-    ConduitRouter       router;
-    ConduitRegistry     reg;
+    ConduitRouter router;
+    ConduitRegistry reg;
     LocalLendingAdapter adapter;
-    MockLendingPool     pool;
-    MockERC20           underlying;
-    MockRiskOracle      oracle;
+    MockLendingPool pool;
+    MockERC20 underlying;
+    MockRiskOracle oracle;
 
     address constant alice = address(0xA11CE);
 
-    bytes32 constant PRODUCT         = ProductIds.USDC_HUB_LENDING_V1;
-    uint256 constant USER_BALANCE    = 10_000e6;
-    uint256 constant DEFAULT_AMOUNT  = 1_000e6;
-    uint256 constant DEFAULT_SCORE   = 75;
-    uint256 constant DEFAULT_MIN     = 50;
+    bytes32 constant PRODUCT = ProductIds.USDC_HUB_LENDING_V1;
+    uint256 constant USER_BALANCE = 10_000e6;
+    uint256 constant DEFAULT_AMOUNT = 1_000e6;
+    uint256 constant DEFAULT_SCORE = 75;
+    uint256 constant DEFAULT_MIN = 50;
 
     function setUp() public {
         // Token + pool
         underlying = new MockERC20("Mock USDC", "mUSDC");
-        pool       = new MockLendingPool(address(underlying), 500); // 5% APY
+        pool = new MockLendingPool(address(underlying), 500); // 5% APY
 
         // Registry + oracle + router
-        reg    = new ConduitRegistry();
+        reg = new ConduitRegistry();
         oracle = new MockRiskOracle();
         router = new ConduitRouter(address(reg), address(oracle));
 
@@ -142,7 +149,7 @@ contract ConduitRouterTest is Test {
     function test_withdraw_returnsUnderlyingToUser() public {
         _approveAndDeposit(DEFAULT_AMOUNT, DEFAULT_MIN);
 
-        address yt     = adapter.yieldToken();
+        address yt = adapter.yieldToken();
         uint256 shares = MockYieldToken(yt).balanceOf(alice);
 
         vm.startPrank(alice);
@@ -201,7 +208,7 @@ contract ConduitRouterTest is Test {
     function test_withdraw_emitsWithdrawnEvent() public {
         _approveAndDeposit(DEFAULT_AMOUNT, DEFAULT_MIN);
 
-        address yt     = adapter.yieldToken();
+        address yt = adapter.yieldToken();
         uint256 shares = MockYieldToken(yt).balanceOf(alice);
 
         vm.startPrank(alice);

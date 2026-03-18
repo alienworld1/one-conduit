@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {Script, console2}       from "forge-std/Script.sol";
-import {MockERC20}              from "../src/mocks/MockERC20.sol";
-import {MockLendingPool}        from "../src/MockLendingPool.sol";
-import {LocalLendingAdapter}    from "../src/LocalLendingAdapter.sol";
-import {ConduitRegistry}        from "../src/ConduitRegistry.sol";
-import {ProductIds}             from "../src/libraries/ProductIds.sol";
+import {Script, console2} from "forge-std/Script.sol";
+import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockLendingPool} from "../src/MockLendingPool.sol";
+import {LocalLendingAdapter} from "../src/LocalLendingAdapter.sol";
+import {ConduitRegistry} from "../src/ConduitRegistry.sol";
+import {ProductIds} from "../src/libraries/ProductIds.sol";
 
 /*
  * DeployLocalAdapter — deploys MockERC20 (USDC stand-in), MockLendingPool,
@@ -28,7 +28,7 @@ import {ProductIds}             from "../src/libraries/ProductIds.sol";
 contract DeployLocalAdapter is Script {
     function run() external {
         address registryAddress = vm.envAddress("REGISTRY_ADDRESS");
-        bytes32 productId       = ProductIds.USDC_HUB_LENDING_V1;
+        bytes32 productId = ProductIds.USDC_HUB_LENDING_V1;
 
         vm.startBroadcast();
 
@@ -40,19 +40,10 @@ contract DeployLocalAdapter is Script {
         MockLendingPool pool = new MockLendingPool(address(mockUSDC), 500);
 
         // 3. Deploy LocalLendingAdapter.
-        LocalLendingAdapter adapter = new LocalLendingAdapter(
-            address(pool),
-            registryAddress,
-            productId
-        );
+        LocalLendingAdapter adapter = new LocalLendingAdapter(address(pool), registryAddress, productId);
 
         // 4. Register adapter in ConduitRegistry.
-        ConduitRegistry(registryAddress).registerAdapter(
-            productId,
-            address(adapter),
-            "USDC Hub Lending v1",
-            false
-        );
+        ConduitRegistry(registryAddress).registerAdapter(productId, address(adapter), "USDC Hub Lending v1", false);
 
         // 5. Push initial metadata — seeds APY/TVL in the registry.
         adapter.pushMetadata();

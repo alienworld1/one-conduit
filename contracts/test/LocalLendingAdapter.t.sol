@@ -1,12 +1,12 @@
 // SPDX-License-Identifier: UNLICENSED
 pragma solidity ^0.8.28;
 
-import {Test}                        from "forge-std/Test.sol";
-import {LocalLendingAdapter}         from "../src/LocalLendingAdapter.sol";
+import {Test} from "forge-std/Test.sol";
+import {LocalLendingAdapter} from "../src/LocalLendingAdapter.sol";
 import {MockLendingPool, ZeroAmount} from "../src/MockLendingPool.sol";
-import {MockERC20}                   from "../src/mocks/MockERC20.sol";
-import {MockYieldToken}              from "../src/mocks/MockYieldToken.sol";
-import {ProductIds}                  from "../src/libraries/ProductIds.sol";
+import {MockERC20} from "../src/mocks/MockERC20.sol";
+import {MockYieldToken} from "../src/mocks/MockYieldToken.sol";
+import {ProductIds} from "../src/libraries/ProductIds.sol";
 
 /*
  * LocalLendingAdapterTest — unit tests for LocalLendingAdapter + MockLendingPool.
@@ -18,18 +18,18 @@ import {ProductIds}                  from "../src/libraries/ProductIds.sol";
  * registry = address(0) throughout — skips pushMetadata. Registry integration verified by deploy script.
  */
 contract LocalLendingAdapterTest is Test {
-    MockERC20           mockUSDC;
-    MockLendingPool     pool;
+    MockERC20 mockUSDC;
+    MockLendingPool pool;
     LocalLendingAdapter adapter;
 
     bytes32 internal constant PRODUCT_ID = ProductIds.USDC_HUB_LENDING_V1;
 
     function setUp() public {
         mockUSDC = new MockERC20("Mock USDC", "mUSDC");
-        pool     = new MockLendingPool(address(mockUSDC), 500); // 5% APY
+        pool = new MockLendingPool(address(mockUSDC), 500); // 5% APY
 
         // 3-param constructor: pool, registry (address(0) disables pushMetadata), productId
-        adapter  = new LocalLendingAdapter(address(pool), address(0), PRODUCT_ID);
+        adapter = new LocalLendingAdapter(address(pool), address(0), PRODUCT_ID);
 
         // Mint test USDC to address(this) — enough for all tests.
         mockUSDC.mint(address(this), 10_000e6);
@@ -86,7 +86,7 @@ contract LocalLendingAdapterTest is Test {
     // ─── Withdraw ─────────────────────────────────────────────────────────────────
 
     function test_withdraw_success() public {
-        uint256 shares   = _deposit(1000e6);
+        uint256 shares = _deposit(1000e6);
         uint256 returned = _withdraw(shares);
 
         // Same block → index unchanged → returned == deposited exactly.

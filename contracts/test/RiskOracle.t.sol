@@ -7,6 +7,7 @@ import {RiskOracle} from "../src/RiskOracle.sol";
 import {ProductIds} from "../src/libraries/ProductIds.sol";
 
 error Unauthorized();
+
 event ScoreUpdated(bytes32 indexed productId, uint256 newScore);
 
 contract RiskOracleTest is Test {

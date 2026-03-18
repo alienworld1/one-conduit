@@ -9,9 +9,9 @@ pragma solidity ^0.8.28;
  * No OpenZeppelin — inline implementation to keep PVM compilation simple.
  */
 contract MockYieldToken {
-    string  public name;
-    string  public symbol;
-    uint8   public constant decimals = 6;
+    string public name;
+    string public symbol;
+    uint8 public constant decimals = 6;
     uint256 public totalSupply;
 
     mapping(address => uint256) public balanceOf;
@@ -28,25 +28,25 @@ contract MockYieldToken {
     }
 
     constructor(string memory name_, string memory symbol_, address pool_) {
-        name   = name_;
+        name = name_;
         symbol = symbol_;
-        pool   = pool_;
+        pool = pool_;
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
         require(balanceOf[msg.sender] >= amount, "ERC20: insufficient balance");
         balanceOf[msg.sender] -= amount;
-        balanceOf[to]         += amount;
+        balanceOf[to] += amount;
         emit Transfer(msg.sender, to, amount);
         return true;
     }
 
     function transferFrom(address from, address to, uint256 amount) external returns (bool) {
-        require(balanceOf[from]             >= amount, "ERC20: insufficient balance");
+        require(balanceOf[from] >= amount, "ERC20: insufficient balance");
         require(allowance[from][msg.sender] >= amount, "ERC20: insufficient allowance");
         allowance[from][msg.sender] -= amount;
-        balanceOf[from]             -= amount;
-        balanceOf[to]               += amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
         emit Transfer(from, to, amount);
         return true;
     }
@@ -58,15 +58,15 @@ contract MockYieldToken {
     }
 
     function mint(address to, uint256 amount) external onlyPool {
-        totalSupply   += amount;
+        totalSupply += amount;
         balanceOf[to] += amount;
         emit Transfer(address(0), to, amount);
     }
 
     function burn(address from, uint256 amount) external onlyPool {
         require(balanceOf[from] >= amount, "ERC20: insufficient balance");
-        totalSupply       -= amount;
-        balanceOf[from]   -= amount;
+        totalSupply -= amount;
+        balanceOf[from] -= amount;
         emit Transfer(from, address(0), amount);
     }
 }

@@ -15,7 +15,7 @@ import {MockAdapter} from "./mocks/MockAdapter.sol";
 
 contract ConduitRegistryTest is Test {
     ConduitRegistry registry;
-    MockAdapter     mockAdapter;
+    MockAdapter mockAdapter;
 
     // Test uses address(this) as owner — ConduitRegistry sets owner = msg.sender in constructor.
     address internal nonOwner = makeAddr("nonOwner");
@@ -27,7 +27,7 @@ contract ConduitRegistryTest is Test {
     bytes32 internal constant PID3 = keccak256(abi.encodePacked("ETH:HUB:staking-v1"));
 
     function setUp() public {
-        registry    = new ConduitRegistry();
+        registry = new ConduitRegistry();
         mockAdapter = new MockAdapter();
     }
 
@@ -39,10 +39,7 @@ contract ConduitRegistryTest is Test {
     }
 
     /// Register PID1, PID2, PID3 each with a distinct MockAdapter.
-    function _registerThree()
-        internal
-        returns (MockAdapter a1, MockAdapter a2, MockAdapter a3)
-    {
+    function _registerThree() internal returns (MockAdapter a1, MockAdapter a2, MockAdapter a3) {
         a1 = new MockAdapter();
         a2 = new MockAdapter();
         a3 = new MockAdapter();
@@ -60,15 +57,15 @@ contract ConduitRegistryTest is Test {
         assertEq(products.length, 1);
 
         ProductView memory pv = products[0];
-        assertEq(pv.productId,      PID1);
+        assertEq(pv.productId, PID1);
         assertEq(pv.adapterAddress, address(mockAdapter));
-        assertEq(pv.name,           "USDC Lending v1");
+        assertEq(pv.name, "USDC Lending v1");
         assertFalse(pv.isXCM);
-        assertEq(pv.apyBps,         0); // no metadata pushed yet
-        assertEq(pv.tvlUSD,         0);
+        assertEq(pv.apyBps, 0); // no metadata pushed yet
+        assertEq(pv.tvlUSD, 0);
         assertEq(pv.utilizationBps, 0);
-        assertEq(pv.lastUpdated,    0);
-        assertEq(pv.riskScore,      0); // always 0 until Module 4
+        assertEq(pv.lastUpdated, 0);
+        assertEq(pv.riskScore, 0); // always 0 until Module 4
     }
 
     function test_registerAdapter_onlyOwner() public {
@@ -136,10 +133,10 @@ contract ConduitRegistryTest is Test {
         assertEq(products.length, 1);
 
         ProductView memory pv = products[0];
-        assertEq(pv.apyBps,         750);
-        assertEq(pv.tvlUSD,         5_000_000);
+        assertEq(pv.apyBps, 750);
+        assertEq(pv.tvlUSD, 5_000_000);
         assertEq(pv.utilizationBps, 3000);
-        assertGe(pv.lastUpdated,    beforeUpdate);
+        assertGe(pv.lastUpdated, beforeUpdate);
     }
 
     function test_pushMetadata_onlyOwner() public {
@@ -187,9 +184,9 @@ contract ConduitRegistryTest is Test {
         assertEq(products.length, 2);
 
         // Verify the two returned products are PID1 and PID2 (in registration order).
-        assertEq(products[0].productId,      PID1);
+        assertEq(products[0].productId, PID1);
         assertEq(products[0].adapterAddress, address(a1));
-        assertEq(products[1].productId,      PID2);
+        assertEq(products[1].productId, PID2);
         assertEq(products[1].adapterAddress, address(a2));
         assertTrue(products[1].isXCM);
     }
@@ -211,7 +208,7 @@ contract ConduitRegistryTest is Test {
 
         AdapterInfo memory info = registry.getAdapter(PID1);
         assertEq(info.adapterAddress, address(mockAdapter));
-        assertEq(info.name,           "USDC Lending v1");
+        assertEq(info.name, "USDC Lending v1");
         assertFalse(info.isXCM);
         assertTrue(info.active);
         assertGt(info.registeredAt, 0);

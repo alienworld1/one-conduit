@@ -45,8 +45,8 @@
 | Contract | Address | Deployed At |
 |---|---|---|
 | `XCMAdapter` | _pending_ | — |
-| `EscrowVault` | _pending_ | — |
-| `PendingReceiptNFT` | _pending_ | — |
+| `EscrowVault` | 0xe68C52f6bd8985e321d1C81491608EA0af63C577 | — |
+| `PendingReceiptNFT` | 0xe68C52f6bd8985e321d1C81491608EA0af63C577 | — |
 
 ---
 

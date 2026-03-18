@@ -21,7 +21,7 @@ contract MockRiskOracle is IRiskOracle {
         uint256, // apyBps
         uint256, // tvlUSD
         uint256, // utilizationBps
-        uint256  // contractAgeDays
+        uint256 // contractAgeDays
     ) external view returns (uint256) {
         return _scores[productId];
     }

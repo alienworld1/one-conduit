@@ -1,7 +1,7 @@
 // SPDX-License-Identifier: MIT
 pragma solidity ^0.8.28;
 
-import {ILendingPool}   from "./interfaces/ILendingPool.sol";
+import {ILendingPool} from "./interfaces/ILendingPool.sol";
 import {MockYieldToken} from "./mocks/MockYieldToken.sol";
 
 /*
@@ -30,6 +30,7 @@ error ZeroAmount();
 // ─── Events ─────────────────────────────────────────────────────────────────────
 
 event Deposited(address indexed depositor, address indexed recipient, uint256 amount, uint256 shares);
+
 event Withdrawn(address indexed withdrawer, address indexed recipient, uint256 shares, uint256 amount);
 
 // ─── Contract ───────────────────────────────────────────────────────────────────
@@ -41,12 +42,12 @@ contract MockLendingPool is ILendingPool {
 
     address public owner;
     address public underlyingToken; // ILendingPool: underlyingToken()
-    address private _yieldToken;    // ILendingPool: yieldToken() — avoids name clash
+    address private _yieldToken; // ILendingPool: yieldToken() — avoids name clash
 
-    uint256 public totalDeposited;  // raw underlying held by pool (not mark-to-market)
-    uint256 public liquidityIndex;  // 1e18 = exchange rate 1.0; grows per block
+    uint256 public totalDeposited; // raw underlying held by pool (not mark-to-market)
+    uint256 public liquidityIndex; // 1e18 = exchange rate 1.0; grows per block
     uint256 public lastUpdateBlock; // block.number at last index update
-    uint256 public annualRateBps;   // e.g. 500 = 5%, 2000 = 20%
+    uint256 public annualRateBps; // e.g. 500 = 5%, 2000 = 20%
 
     modifier onlyOwner() {
         require(msg.sender == owner, "not owner");
@@ -54,10 +55,10 @@ contract MockLendingPool is ILendingPool {
     }
 
     constructor(address underlying_, uint256 annualRateBps_) {
-        owner           = msg.sender;
+        owner = msg.sender;
         underlyingToken = underlying_;
-        annualRateBps   = annualRateBps_;
-        liquidityIndex  = 1e18;
+        annualRateBps = annualRateBps_;
+        liquidityIndex = 1e18;
         lastUpdateBlock = block.number;
 
         // Pool deploys its own yield token; pool address = address(this) after construction.
@@ -136,7 +137,7 @@ contract MockLendingPool is ILendingPool {
         uint256 blocksElapsed = block.number - lastUpdateBlock;
         if (blocksElapsed == 0 || annualRateBps == 0) return liquidityIndex;
         uint256 ratePerBlock = (annualRateBps * 1e18) / (10000 * BLOCKS_PER_YEAR);
-        uint256 indexDelta   = (liquidityIndex * ratePerBlock * blocksElapsed) / 1e18;
+        uint256 indexDelta = (liquidityIndex * ratePerBlock * blocksElapsed) / 1e18;
         return liquidityIndex + indexDelta;
     }
 
@@ -159,8 +160,8 @@ contract MockLendingPool is ILendingPool {
         // ratePerBlock = annualRateBps * 1e18 / (10000 * BLOCKS_PER_YEAR)
         // indexDelta   = liquidityIndex * ratePerBlock * blocksElapsed / 1e18
         uint256 ratePerBlock = (annualRateBps * 1e18) / (10000 * BLOCKS_PER_YEAR);
-        uint256 indexDelta   = (liquidityIndex * ratePerBlock * blocksElapsed) / 1e18;
-        liquidityIndex      += indexDelta;
+        uint256 indexDelta = (liquidityIndex * ratePerBlock * blocksElapsed) / 1e18;
+        liquidityIndex += indexDelta;
     }
 
     function _safeTransferFrom(address token, address from, address to, uint256 amount) internal {

@@ -8,13 +8,11 @@ pragma solidity ^0.8.28;
 interface IYieldAdapter {
     /// @notice Deposit `amount` of the underlying token on behalf of `recipient`.
     /// @return receiptOrYieldTokens  Yield tokens (local path) or receiptId cast to uint256 (XCM path).
-    function deposit(uint256 amount, address recipient)
-        external returns (uint256 receiptOrYieldTokens);
+    function deposit(uint256 amount, address recipient) external returns (uint256 receiptOrYieldTokens);
 
     /// @notice Withdraw `receiptOrYieldAmount` on behalf of `recipient`.
     /// @return assetsOut  Underlying assets returned.
-    function withdraw(uint256 receiptOrYieldAmount, address recipient)
-        external returns (uint256 assetsOut);
+    function withdraw(uint256 receiptOrYieldAmount, address recipient) external returns (uint256 assetsOut);
 
     /// @notice Current APY in basis points (1 bps = 0.01%).
     function getAPY() external view returns (uint256 apyBps);

@@ -7,9 +7,9 @@ pragma solidity ^0.8.28;
  * No OpenZeppelin — inline implementation to keep PVM compilation simple.
  */
 contract MockERC20 {
-    string  public name;
-    string  public symbol;
-    uint8   public constant decimals = 6;
+    string public name;
+    string public symbol;
+    uint8 public constant decimals = 6;
     uint256 public totalSupply;
 
     mapping(address => uint256) public balanceOf;
@@ -21,25 +21,25 @@ contract MockERC20 {
     event Approval(address indexed owner_, address indexed spender, uint256 value);
 
     constructor(string memory name_, string memory symbol_) {
-        name   = name_;
+        name = name_;
         symbol = symbol_;
-        owner  = msg.sender;
+        owner = msg.sender;
     }
 
     function transfer(address to, uint256 amount) external returns (bool) {
         require(balanceOf[msg.sender] >= amount, "ERC20: insufficient balance");
         balanceOf[msg.sender] -= amount;
-        balanceOf[to]         += amount;
+        balanceOf[to] += amount;
         emit Transfer(msg.sender, to, amount);
         return true;
     }
 
     function transferFrom(address from, address to, uint256 amount) external returns (bool) {
-        require(balanceOf[from]             >= amount, "ERC20: insufficient balance");
+        require(balanceOf[from] >= amount, "ERC20: insufficient balance");
         require(allowance[from][msg.sender] >= amount, "ERC20: insufficient allowance");
         allowance[from][msg.sender] -= amount;
-        balanceOf[from]             -= amount;
-        balanceOf[to]               += amount;
+        balanceOf[from] -= amount;
+        balanceOf[to] += amount;
         emit Transfer(from, to, amount);
         return true;
     }
@@ -52,8 +52,8 @@ contract MockERC20 {
 
     function mint(address to, uint256 amount) external {
         require(msg.sender == owner, "not owner");
-        totalSupply    += amount;
-        balanceOf[to]  += amount;
+        totalSupply += amount;
+        balanceOf[to] += amount;
         emit Transfer(address(0), to, amount);
     }
 }

@@ -2,8 +2,8 @@
 pragma solidity ^0.8.28;
 
 import {Script, console2} from "forge-std/Script.sol";
-import {ConduitRouter}    from "../src/ConduitRouter.sol";
-import {ProductIds}       from "../src/libraries/ProductIds.sol";
+import {ConduitRouter} from "../src/ConduitRouter.sol";
+import {ProductIds} from "../src/libraries/ProductIds.sol";
 
 /*
  * DeployRouter — deploys ConduitRouter on Paseo Passet Hub.
@@ -22,9 +22,9 @@ import {ProductIds}       from "../src/libraries/ProductIds.sol";
  */
 contract DeployRouter is Script {
     function run() external {
-        address registryAddress   = vm.envAddress("REGISTRY_ADDRESS");
+        address registryAddress = vm.envAddress("REGISTRY_ADDRESS");
         address riskOracleAddress = vm.envAddress("RISK_ORACLE_ADDRESS");
-        bytes32 productId         = ProductIds.USDC_HUB_LENDING_V1;
+        bytes32 productId = ProductIds.USDC_HUB_LENDING_V1;
 
         vm.startBroadcast();
         ConduitRouter router = new ConduitRouter(registryAddress, riskOracleAddress);
