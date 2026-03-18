@@ -13,7 +13,7 @@ import {IERC20}                       from "./interfaces/IERC20.sol";
  *   1. User approves this router to spend their input token.
  *   2. User calls deposit(productId, amount, minRiskScore).
  *   3. Router resolves adapter via ConduitRegistry.
- *   4. Router calls RiskOracle.getScore() — cross-VM call to Rust/ink! contract on PVM.
+ *   4. Router calls RiskOracle.getScore().
  *      If score < minRiskScore the tx reverts (risk gate).
  *   5. Router pulls tokens from user, approves adapter, calls adapter.deposit().
  *   6. Adapter pulls tokens from router, interacts with the pool.
@@ -31,10 +31,12 @@ import {IERC20}                       from "./interfaces/IERC20.sol";
 // ProductNotFound comes from ConduitRegistry.sol (file-level import) — not re-declared here.
 
 error RiskScoreTooLow(uint256 current, uint256 minimum);
+error DepositReturnedZero(bytes32 productId);
+error InsufficientAllowance(address token, uint256 required, uint256 available);
 error ReceiptNotFound(uint256 receiptId);
 error ReceiptAlreadySettled(uint256 receiptId);
 error InvalidSettlementProof(uint256 receiptId);
-error SettleNotImplemented();
+error NotImplemented();
 
 // ── Events ────────────────────────────────────────────────────────────────────
 
@@ -43,6 +45,13 @@ event Deposited(
     bytes32 indexed productId,
     uint256 amountIn,
     uint256 tokensOut
+);
+
+event Withdrawn(
+    address indexed user,
+    bytes32 indexed productId,
+    uint256 tokensIn,
+    uint256 amountOut
 );
 
 // XCMDispatched emitted by XCMAdapter in Module 4 — declared here for ABI completeness.
@@ -65,10 +74,12 @@ event Settled(
 contract ConduitRouter {
     address public immutable registry;
     address public immutable riskOracle;
+    address public owner;
 
     constructor(address _registry, address _riskOracle) {
         registry   = _registry;
         riskOracle = _riskOracle;
+        owner      = msg.sender;
     }
 
     // ─── Core actions ─────────────────────────────────────────────────────────
@@ -80,24 +91,29 @@ contract ConduitRouter {
     ///                      Pass 0 to skip the risk gate (score 0 still passes — use with care;
     ///                      see IRiskOracle.sol: score 0 = unscored product, not "safe").
     function deposit(bytes32 productId, uint256 amount, uint256 minRiskScore) external {
-        // 1. Resolve adapter — reverts ProductNotFound if inactive or unknown.
+        // 1. Cross-VM risk check.
+        uint256 score = IRiskOracle(riskOracle).getScore(productId);
+        if (score < minRiskScore) revert RiskScoreTooLow(score, minRiskScore);
+
+        // 2. Resolve adapter — reverts ProductNotFound if inactive or unknown.
         AdapterInfo memory info = ConduitRegistry(registry).getAdapter(productId);
         address adapter = info.adapterAddress;
 
-        // 2. Cross-VM risk check.
-        //    bytes32 → uint256 cast is safe (both are 32 bytes; bit pattern preserved).
-        //    On PVM this call crosses the Solidity ↔ Rust boundary via ink! v6 Solidity ABI.
-        uint256 score = IRiskOracle(riskOracle).getScore(uint256(productId));
-        if (score < minRiskScore) revert RiskScoreTooLow(score, minRiskScore);
-
         // 3. Pull tokens from user to router, then approve adapter to pull from router.
-        //    Adapter's deposit() calls transferFrom(router, adapter, amount) internally.
+        //    Check transferFrom return value for safety.
         address token = IYieldAdapter(adapter).underlyingToken();
-        IERC20(token).transferFrom(msg.sender, address(this), amount);
-        IERC20(token).approve(adapter, amount);
+        bool success = IERC20(token).transferFrom(msg.sender, address(this), amount);
+        if (!success) revert InsufficientAllowance(token, amount, 0);
 
-        // 4. Invoke adapter. Returns yield tokens (local) or receiptId cast to uint256 (XCM).
+        // 4. Approve adapter and invoke deposit.
+        IERC20(token).approve(adapter, amount);
         uint256 tokensOut = IYieldAdapter(adapter).deposit(amount, msg.sender);
+
+        // 5. Safety check: adapter must return non-zero tokens.
+        if (tokensOut == 0) revert DepositReturnedZero(productId);
+
+        // 6. Clean up approval (safety pattern — don't leave dangling approvals).
+        IERC20(token).approve(adapter, 0);
 
         emit Deposited(msg.sender, productId, amount, tokensOut);
     }
@@ -114,20 +130,40 @@ contract ConduitRouter {
         IERC20(yt).transferFrom(msg.sender, address(this), yieldTokenAmount);
         IERC20(yt).approve(adapter, yieldTokenAmount);
 
-        IYieldAdapter(adapter).withdraw(yieldTokenAmount, msg.sender);
+        uint256 assetsOut = IYieldAdapter(adapter).withdraw(yieldTokenAmount, msg.sender);
+
+        // Clean up approval
+        IERC20(yt).approve(adapter, 0);
+
+        emit Withdrawn(msg.sender, productId, yieldTokenAmount, assetsOut);
     }
 
     /// @notice Static quote estimate for a deposit.
-    /// @dev    Returns input amount unchanged (1:1) in Module 3.
-    ///         TODO(Module 4): call adapter.getQuote() once the interface supports it.
+    /// @dev    Returns 0 if the product is inactive/unknown without reverting (safe for view calls).
+    /// @return estimated  Estimated yield tokens out based on current exchange rate.
     function getQuote(bytes32 productId, uint256 amount) external view returns (uint256 estimated) {
-        ConduitRegistry(registry).getAdapter(productId); // reverts ProductNotFound if invalid
-        return amount;
+        try ConduitRegistry(registry).getAdapter(productId) returns (AdapterInfo memory info) {
+            estimated = IYieldAdapter(info.adapterAddress).getQuote(amount);
+        } catch {
+            // Product not found or inactive — return 0 instead of reverting in view function
+            estimated = 0;
+        }
     }
 
     /// @notice Settle an XCM pending receipt.
-    ///         TODO(Module 4): routes through XCMAdapter; calls EscrowVault.release() + NFT.burn().
+    ///         Module 6 will implement the full settlement logic.
     function settle(uint256, bytes calldata) external pure {
-        revert SettleNotImplemented();
+        revert NotImplemented();
+    }
+
+    // ─── Recovery & Safety ────────────────────────────────────────────────────
+
+    /// @notice Recover tokens accidentally sent to this contract.
+    /// @dev    Safety valve for tokens stuck in the router between deposit/withdraw.
+    ///         Only callable by owner.
+    function recoverERC20(address token, uint256 amount) external {
+        require(msg.sender == owner, "not owner");
+        bool success = IERC20(token).transfer(msg.sender, amount);
+        require(success, "transfer failed");
     }
 }

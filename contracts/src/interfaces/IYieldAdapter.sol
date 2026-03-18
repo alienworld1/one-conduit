@@ -34,4 +34,9 @@ interface IYieldAdapter {
     /// @notice The ERC-20 token this adapter issues to depositors (yield token / receipt token).
     ///         ConduitRouter uses this to pull yield tokens from the caller on withdrawal.
     function yieldToken() external view returns (address);
+
+    /// @notice Estimate the yield tokens that would be received for a deposit of `amount` underlying.
+    /// @param amount  Underlying amount in underlying decimals.
+    /// @return estimated  Estimated yield tokens out (same decimals as the yield token).
+    function getQuote(uint256 amount) external view returns (uint256 estimated);
 }

@@ -28,7 +28,8 @@ mod risk_oracle {
 
         #[ink(message)]
         pub fn getScore(&self, product_id: ink::U256) -> ink::U256 {
-            let id = product_id.as_u128();
+            // as_u128() panics for keccak256-sized values. low_u128() truncates safely.
+            let id: u128 = product_id.low_u128();
             let score = self.scores.get(&id).unwrap_or(0);
             ink::U256::from(score)
         }
@@ -46,11 +47,11 @@ mod risk_oracle {
                 return Err(());
             }
 
-            let id = product_id.as_u128();
-            let apy = apy_bps.as_u128();
-            let tvl = tvl_usd.as_u128();
-            let util = utilization_bps.as_u128();
-            let age = contract_age_days.as_u128();
+            let id: u128 = product_id.low_u128();
+            let apy = apy_bps.low_u128();
+            let tvl = tvl_usd.low_u128();
+            let util = utilization_bps.low_u128();
+            let age = contract_age_days.low_u128();
 
             // Utilisation
             let util_score = 100u128.saturating_sub(util.saturating_mul(100) / 10_000);

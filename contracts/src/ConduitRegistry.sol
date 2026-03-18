@@ -207,7 +207,7 @@ contract ConduitRegistry {
                 tvlUSD:         cachedTVL[pid],
                 utilizationBps: cachedUtilization[pid],
                 lastUpdated:    lastUpdated[pid],
-                riskScore:      0 // TODO(Module 4): wire in RiskOracle.getScore(uint256(pid))
+                riskScore:      0 // TODO(Module 4): wire in RiskOracle.getScore(pid)
             });
             idx++;
         }

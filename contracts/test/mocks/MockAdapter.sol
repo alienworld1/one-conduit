@@ -39,4 +39,8 @@ contract MockAdapter is IYieldAdapter {
     function yieldToken() external pure returns (address) {
         return address(2); // stub — not used in registry-level tests
     }
+
+    function getQuote(uint256 amount) external pure returns (uint256) {
+        return amount; // 1:1 mock
+    }
 }

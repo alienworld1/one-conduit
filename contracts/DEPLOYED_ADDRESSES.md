@@ -1,7 +1,7 @@
 # OneConduit — Deployed Addresses
 
-**Network:** Paseo Passet Hub
-**Chain ID:** (Paseo Passet Hub testnet)
+**Network:** Paseo Asset Hub
+**Chain ID:** (Paseo Asset Hub testnet)
 
 ## Module 2 — ConduitRegistry + IYieldAdapter
 
@@ -22,13 +22,23 @@
 
 | Contract | Address | Deployed At |
 |---|---|---|
-| `RiskOracle` | 0x6Bee0885A5d7c621215AD773a8c692a1bD16Aa60 | — |
+| `RiskOracle` (v1 — broken, as_u128 panic) | 0xDfB3c383642960D1488aBcf7107f053455A96f82 | — |
+| `RiskOracle` (v2 — fixed, low_u128) | 0x925287C7F2BC699A7874FE66Aacc95da432094B3 | — |
 
 ## Module 5 — ConduitRouter
 
 | Contract | Address | Deployed At |
 |---|---|---|
 | `ConduitRouter` | _pending_ | — |
+
+## Module 4.5 — RiskOracle.sol (Solidity, replaces ink! version)
+
+| Contract | Address | Notes |
+|---|---|---|
+| `RiskOracle.sol` | 0x925287C7F2BC699A7874FE66Aacc95da432094B3 | Active |
+| `RiskOracle` (ink! v6) | 0x6Bee0885A5d7c621215AD773a8c692a1bD16Aa60 | Deprecated — ink! v6 unreliable on Paseo |
+| `ConduitRouter` (v2) | 0xc72Eb468E1e406D02A4Cb47aA3BDB69b9F4B6538 | Points at Solidity oracle |
+| `ConduitRouter` (v1) | _pending_ | Deprecated |
 
 ## Module 6 — XCMAdapter + EscrowVault + PendingReceiptNFT
 

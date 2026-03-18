@@ -3,7 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 
-import {ConduitRouter, RiskScoreTooLow, SettleNotImplemented, Deposited} from "../src/ConduitRouter.sol";
+import {ConduitRouter, RiskScoreTooLow, NotImplemented, DepositReturnedZero, Deposited, Withdrawn} from "../src/ConduitRouter.sol";
 import {ConduitRegistry, AdapterInfo, ProductNotFound} from "../src/ConduitRegistry.sol";
 import {LocalLendingAdapter}     from "../src/LocalLendingAdapter.sol";
 import {MockLendingPool}         from "../src/MockLendingPool.sol";
@@ -51,7 +51,7 @@ contract ConduitRouterTest is Test {
         reg.registerAdapter(PRODUCT, address(adapter), "USDC Hub Lending v1", false);
 
         // Healthy risk score
-        oracle.setScore(uint256(PRODUCT), DEFAULT_SCORE);
+        oracle.setScore(PRODUCT, DEFAULT_SCORE);
 
         // Fund alice
         underlying.mint(alice, USER_BALANCE);
@@ -95,7 +95,7 @@ contract ConduitRouterTest is Test {
     // ── Risk gate ─────────────────────────────────────────────────────────────
 
     function test_deposit_riskScoreTooLow_reverts() public {
-        oracle.setScore(uint256(PRODUCT), 30);
+        oracle.setScore(PRODUCT, 30);
 
         vm.startPrank(alice);
         underlying.approve(address(router), DEFAULT_AMOUNT);
@@ -105,13 +105,13 @@ contract ConduitRouterTest is Test {
     }
 
     function test_deposit_scoreExactlyAtMinimum_passes() public {
-        oracle.setScore(uint256(PRODUCT), DEFAULT_MIN);
+        oracle.setScore(PRODUCT, DEFAULT_MIN);
         _approveAndDeposit(DEFAULT_AMOUNT, DEFAULT_MIN); // equal → passes
         assertEq(MockYieldToken(adapter.yieldToken()).balanceOf(alice), DEFAULT_AMOUNT);
     }
 
     function test_deposit_zeroMinScore_bypassesGate() public {
-        oracle.setScore(uint256(PRODUCT), 0); // unscored
+        oracle.setScore(PRODUCT, 0); // unscored
         _approveAndDeposit(DEFAULT_AMOUNT, 0); // minRiskScore=0 → no gate
         assertEq(MockYieldToken(adapter.yieldToken()).balanceOf(alice), DEFAULT_AMOUNT);
     }
@@ -123,7 +123,8 @@ contract ConduitRouterTest is Test {
         vm.startPrank(alice);
         underlying.approve(address(router), DEFAULT_AMOUNT);
         vm.expectRevert(abi.encodeWithSelector(ProductNotFound.selector, unknown));
-        router.deposit(unknown, DEFAULT_AMOUNT, DEFAULT_MIN);
+        // minRiskScore=0 bypasses risk gate (unknown has no score set) so registry fires
+        router.deposit(unknown, DEFAULT_AMOUNT, 0);
         vm.stopPrank();
     }
 
@@ -167,22 +168,49 @@ contract ConduitRouterTest is Test {
 
     // ── getQuote ──────────────────────────────────────────────────────────────
 
-    function test_getQuote_returnsAmountFor1To1() public view {
-        assertEq(router.getQuote(PRODUCT, 500e6), 500e6);
+    function test_getQuote_returnsAdapterQuote() public view {
+        // At block 0, liquidityIndex == 1e18, so quote should be 1:1
+        uint256 quote = router.getQuote(PRODUCT, 500e6);
+        assertEq(quote, 500e6);
         assertEq(router.getQuote(PRODUCT, 0), 0);
     }
 
-    function test_getQuote_unknownProduct_reverts() public {
+    function test_getQuote_unknownProduct_returnsZero() public view {
         bytes32 unknown = keccak256("NOT:EXISTS");
-        vm.expectRevert(abi.encodeWithSelector(ProductNotFound.selector, unknown));
-        router.getQuote(unknown, 100e6);
+        // getQuote returns 0 for unknown products instead of reverting
+        assertEq(router.getQuote(unknown, 100e6), 0);
     }
 
     // ── settle ────────────────────────────────────────────────────────────────
 
     function test_settle_revertsNotImplemented() public {
-        vm.expectRevert(SettleNotImplemented.selector);
+        vm.expectRevert(NotImplemented.selector);
         router.settle(1, "");
+    }
+
+    // ── Approval cleanup & error handling ──────────────────────────────────────
+
+    function test_deposit_noResidualApproval() public {
+        _approveAndDeposit(DEFAULT_AMOUNT, DEFAULT_MIN);
+
+        // Verify router has no residual approval for the adapter
+        uint256 remaining = underlying.allowance(address(router), address(adapter));
+        assertEq(remaining, 0, "router approval not cleaned up");
+    }
+
+    function test_withdraw_emitsWithdrawnEvent() public {
+        _approveAndDeposit(DEFAULT_AMOUNT, DEFAULT_MIN);
+
+        address yt     = adapter.yieldToken();
+        uint256 shares = MockYieldToken(yt).balanceOf(alice);
+
+        vm.startPrank(alice);
+        MockYieldToken(yt).approve(address(router), shares);
+
+        vm.expectEmit(true, true, false, true);
+        emit Withdrawn(alice, PRODUCT, shares, shares); // 1:1 at block 0
+        router.withdraw(PRODUCT, shares);
+        vm.stopPrank();
     }
 
     // ── Registry integration ──────────────────────────────────────────────────
