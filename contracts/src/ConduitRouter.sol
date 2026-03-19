@@ -5,9 +5,18 @@ import {ConduitRegistry, AdapterInfo} from "./ConduitRegistry.sol";
 import {IYieldAdapter} from "./interfaces/IYieldAdapter.sol";
 import {IRiskOracle} from "./interfaces/IRiskOracle.sol";
 import {IERC20} from "./interfaces/IERC20.sol";
+import {IPendingReceiptNFT} from "./interfaces/IPendingReceiptNFT.sol";
+import {ISettleable} from "./interfaces/ISettleable.sol";
 
 /*
- * ConduitRouter — single entry-point for all OneConduit yield operations.
+ * ConduitRouter v3 — single entry-point for all OneConduit yield operations.
+ *
+ * v3 changes:
+ *   - receiptNFT storage + setReceiptNFT() setter.
+ *   - settle() now delegates to the adapter resolved via ConduitRegistry instead of
+ *     reverting NotImplemented unconditionally. ConduitRouter reads the productId from
+ *     PendingReceiptNFT.receipts(), resolves the adapter, and calls ISettleable.settle().
+ *   - NotConfigured() error added for the receiptNFT == address(0) guard.
  *
  * Deposit flow:
  *   1. User approves this router to spend their input token.
@@ -16,15 +25,20 @@ import {IERC20} from "./interfaces/IERC20.sol";
  *   4. Router calls RiskOracle.getScore().
  *      If score < minRiskScore the tx reverts (risk gate).
  *   5. Router pulls tokens from user, approves adapter, calls adapter.deposit().
- *   6. Adapter pulls tokens from router, interacts with the pool.
+ *   6. Adapter pulls tokens from router, interacts with the pool or XCM path.
  *   7. Deposited event emitted.
  *
- * Withdraw flow:
+ * Withdraw flow (local adapters only):
  *   1. User approves this router to spend yield tokens.
  *   2. User calls withdraw(productId, yieldTokenAmount).
  *   3. Router pulls yield tokens from user, approves adapter, calls adapter.withdraw().
  *
- * settle() — stub for XCM receipt settlement, implemented in Module 4.
+ * Settle flow (XCM adapters only):
+ *   1. Anyone calls settle(receiptId, proof).
+ *   2. Router reads productId from PendingReceiptNFT.receipts(receiptId).
+ *   3. Router resolves the adapter via ConduitRegistry.
+ *   4. Router delegates to ISettleable(adapter).settle(receiptId, proof).
+ *   5. Module 7 fills in the real settle logic inside the adapter.
  */
 
 // ── Custom errors ─────────────────────────────────────────────────────────────
@@ -33,10 +47,13 @@ import {IERC20} from "./interfaces/IERC20.sol";
 error RiskScoreTooLow(uint256 current, uint256 minimum);
 error DepositReturnedZero(bytes32 productId);
 error InsufficientAllowance(address token, uint256 required, uint256 available);
+error InsufficientBalance(address token, uint256 required, uint256 available);
 error ReceiptNotFound(uint256 receiptId);
 error ReceiptAlreadySettled(uint256 receiptId);
 error InvalidSettlementProof(uint256 receiptId);
 error NotImplemented();
+/// @dev Fired by settle() when receiptNFT has not been set yet.
+error NotConfigured();
 
 // ── Events ────────────────────────────────────────────────────────────────────
 
@@ -44,7 +61,7 @@ event Deposited(address indexed user, bytes32 indexed productId, uint256 amountI
 
 event Withdrawn(address indexed user, bytes32 indexed productId, uint256 tokensIn, uint256 amountOut);
 
-// XCMDispatched emitted by XCMAdapter in Module 4 — declared here for ABI completeness.
+// XCMDispatched is emitted by XCMAdapter — declared here for ABI completeness.
 event XCMDispatched(
     address indexed user, bytes32 indexed productId, uint256 amount, uint256 receiptId, bytes32 xcmMsgHash
 );
@@ -58,10 +75,25 @@ contract ConduitRouter {
     address public immutable riskOracle;
     address public owner;
 
+    /// @notice PendingReceiptNFT address — required for settle() to look up productId by receiptId.
+    ///         Set post-deploy via setReceiptNFT(). Not passed to constructor to keep v3
+    ///         compatible with the existing deployment pattern.
+    address public receiptNFT;
+
     constructor(address _registry, address _riskOracle) {
         registry = _registry;
         riskOracle = _riskOracle;
         owner = msg.sender;
+    }
+
+    // ─── Admin ────────────────────────────────────────────────────────────────
+
+    /// @notice Set the PendingReceiptNFT address used by settle().
+    /// @dev    Only callable by owner. Can be called multiple times (no one-time guard here —
+    ///         the NFT address may need updating if the NFT contract is redeployed).
+    function setReceiptNFT(address receiptNFT_) external {
+        require(msg.sender == owner, "not owner");
+        receiptNFT = receiptNFT_;
     }
 
     // ─── Core actions ─────────────────────────────────────────────────────────
@@ -84,14 +116,24 @@ contract ConduitRouter {
         // 3. Pull tokens from user to router, then approve adapter to pull from router.
         //    Check transferFrom return value for safety.
         address token = IYieldAdapter(adapter).underlyingToken();
+        uint256 allowance = IERC20(token).allowance(msg.sender, address(this));
+        if (allowance < amount) {
+            revert InsufficientAllowance(token, amount, allowance);
+        }
+        uint256 balance = IERC20(token).balanceOf(msg.sender);
+        if (balance < amount) {
+            revert InsufficientBalance(token, amount, balance);
+        }
+
         bool success = IERC20(token).transferFrom(msg.sender, address(this), amount);
-        if (!success) revert InsufficientAllowance(token, amount, 0);
+        if (!success) revert InsufficientAllowance(token, amount, allowance);
 
         // 4. Approve adapter and invoke deposit.
         IERC20(token).approve(adapter, amount);
         uint256 tokensOut = IYieldAdapter(adapter).deposit(amount, msg.sender);
 
         // 5. Safety check: adapter must return non-zero tokens.
+        //    For XCMAdapter this is the receipt NFT ID (>= 1). For local adapters it's yield shares.
         if (tokensOut == 0) revert DepositReturnedZero(productId);
 
         // 6. Clean up approval (safety pattern — don't leave dangling approvals).
@@ -102,7 +144,7 @@ contract ConduitRouter {
 
     /// @notice Withdraw from a local yield product by redeeming yield tokens.
     ///         Caller must pre-approve this router to spend their yield tokens.
-    /// @dev TODO(Module 4): XCM withdrawal path is architecturally out of scope for v1.
+    /// @dev XCM products do not support withdrawal — adapter.withdraw() reverts WithdrawalNotSupported.
     function withdraw(bytes32 productId, uint256 yieldTokenAmount) external {
         AdapterInfo memory info = ConduitRegistry(registry).getAdapter(productId);
         address adapter = info.adapterAddress;
@@ -132,10 +174,29 @@ contract ConduitRouter {
         }
     }
 
-    /// @notice Settle an XCM pending receipt.
-    ///         Module 6 will implement the full settlement logic.
-    function settle(uint256, bytes calldata) external pure {
-        revert NotImplemented();
+    /// @notice Settle a pending XCM receipt by delegating to the product's adapter.
+    /// @dev    Reads productId from PendingReceiptNFT, resolves the adapter via ConduitRegistry,
+    ///         and calls ISettleable(adapter).settle(receiptId, proof).
+    ///         Module 7 implements the real settlement logic inside XCMAdapter.settle().
+    ///         For now, delegation reaches XCMAdapter.settle() which reverts NotImplemented.
+    /// @param receiptId  PendingReceiptNFT token ID to settle.
+    /// @param proof      Settlement proof bytes — format defined by Module 7.
+    function settle(uint256 receiptId, bytes calldata proof) external {
+        if (receiptNFT == address(0)) revert NotConfigured();
+
+        // Read productId from the NFT to find the correct adapter.
+        // receipts() returns a zero-struct for non-existent IDs; dispatchBlock == 0 means not found.
+        IPendingReceiptNFT.ReceiptData memory data = IPendingReceiptNFT(receiptNFT).receipts(receiptId);
+
+        if (data.dispatchBlock == 0) revert ReceiptNotFound(receiptId);
+        if (data.settled) revert ReceiptAlreadySettled(receiptId);
+
+        // Resolve the adapter registered for this product.
+        AdapterInfo memory info = ConduitRegistry(registry).getAdapter(data.productId);
+
+        // Delegate to the adapter's settle function.
+        // XCMAdapter.settle() currently reverts NotImplemented — Module 7 fills this in.
+        ISettleable(info.adapterAddress).settle(receiptId, proof);
     }
 
     // ─── Recovery & Safety ────────────────────────────────────────────────────

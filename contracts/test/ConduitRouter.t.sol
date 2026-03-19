@@ -3,14 +3,7 @@ pragma solidity ^0.8.28;
 
 import {Test} from "forge-std/Test.sol";
 
-import {
-    ConduitRouter,
-    RiskScoreTooLow,
-    NotImplemented,
-    DepositReturnedZero,
-    Deposited,
-    Withdrawn
-} from "../src/ConduitRouter.sol";
+import {ConduitRouter, RiskScoreTooLow, NotImplemented, NotConfigured, DepositReturnedZero, Deposited, Withdrawn} from "../src/ConduitRouter.sol";
 import {ConduitRegistry, AdapterInfo, ProductNotFound} from "../src/ConduitRegistry.sol";
 import {LocalLendingAdapter} from "../src/LocalLendingAdapter.sol";
 import {MockLendingPool} from "../src/MockLendingPool.sol";
@@ -55,7 +48,12 @@ contract ConduitRouterTest is Test {
         adapter = new LocalLendingAdapter(address(pool), address(0), PRODUCT);
 
         // Register adapter in registry
-        reg.registerAdapter(PRODUCT, address(adapter), "USDC Hub Lending v1", false);
+        reg.registerAdapter(
+            PRODUCT,
+            address(adapter),
+            "USDC Hub Lending v1",
+            false
+        );
 
         // Healthy risk score
         oracle.setScore(PRODUCT, DEFAULT_SCORE);
@@ -79,7 +77,10 @@ contract ConduitRouterTest is Test {
         _approveAndDeposit(DEFAULT_AMOUNT, DEFAULT_MIN);
 
         // At liquidityIndex == 1e18 (block 0): shares == amount exactly
-        assertEq(MockYieldToken(adapter.yieldToken()).balanceOf(alice), DEFAULT_AMOUNT);
+        assertEq(
+            MockYieldToken(adapter.yieldToken()).balanceOf(alice),
+            DEFAULT_AMOUNT
+        );
         assertEq(underlying.balanceOf(alice), USER_BALANCE - DEFAULT_AMOUNT);
     }
 
@@ -106,7 +107,13 @@ contract ConduitRouterTest is Test {
 
         vm.startPrank(alice);
         underlying.approve(address(router), DEFAULT_AMOUNT);
-        vm.expectRevert(abi.encodeWithSelector(RiskScoreTooLow.selector, uint256(30), DEFAULT_MIN));
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                RiskScoreTooLow.selector,
+                uint256(30),
+                DEFAULT_MIN
+            )
+        );
         router.deposit(PRODUCT, DEFAULT_AMOUNT, DEFAULT_MIN);
         vm.stopPrank();
     }
@@ -114,13 +121,19 @@ contract ConduitRouterTest is Test {
     function test_deposit_scoreExactlyAtMinimum_passes() public {
         oracle.setScore(PRODUCT, DEFAULT_MIN);
         _approveAndDeposit(DEFAULT_AMOUNT, DEFAULT_MIN); // equal → passes
-        assertEq(MockYieldToken(adapter.yieldToken()).balanceOf(alice), DEFAULT_AMOUNT);
+        assertEq(
+            MockYieldToken(adapter.yieldToken()).balanceOf(alice),
+            DEFAULT_AMOUNT
+        );
     }
 
     function test_deposit_zeroMinScore_bypassesGate() public {
         oracle.setScore(PRODUCT, 0); // unscored
         _approveAndDeposit(DEFAULT_AMOUNT, 0); // minRiskScore=0 → no gate
-        assertEq(MockYieldToken(adapter.yieldToken()).balanceOf(alice), DEFAULT_AMOUNT);
+        assertEq(
+            MockYieldToken(adapter.yieldToken()).balanceOf(alice),
+            DEFAULT_AMOUNT
+        );
     }
 
     // ── Product not found ─────────────────────────────────────────────────────
@@ -129,7 +142,9 @@ contract ConduitRouterTest is Test {
         bytes32 unknown = keccak256("UNKNOWN:PRODUCT");
         vm.startPrank(alice);
         underlying.approve(address(router), DEFAULT_AMOUNT);
-        vm.expectRevert(abi.encodeWithSelector(ProductNotFound.selector, unknown));
+        vm.expectRevert(
+            abi.encodeWithSelector(ProductNotFound.selector, unknown)
+        );
         // minRiskScore=0 bypasses risk gate (unknown has no score set) so registry fires
         router.deposit(unknown, DEFAULT_AMOUNT, 0);
         vm.stopPrank();
@@ -139,7 +154,9 @@ contract ConduitRouterTest is Test {
         reg.deactivateAdapter(PRODUCT);
         vm.startPrank(alice);
         underlying.approve(address(router), DEFAULT_AMOUNT);
-        vm.expectRevert(abi.encodeWithSelector(ProductNotFound.selector, PRODUCT));
+        vm.expectRevert(
+            abi.encodeWithSelector(ProductNotFound.selector, PRODUCT)
+        );
         router.deposit(PRODUCT, DEFAULT_AMOUNT, DEFAULT_MIN);
         vm.stopPrank();
     }
@@ -168,7 +185,9 @@ contract ConduitRouterTest is Test {
         address yt = adapter.yieldToken();
         vm.startPrank(alice);
         MockYieldToken(yt).approve(address(router), DEFAULT_AMOUNT);
-        vm.expectRevert(abi.encodeWithSelector(ProductNotFound.selector, PRODUCT));
+        vm.expectRevert(
+            abi.encodeWithSelector(ProductNotFound.selector, PRODUCT)
+        );
         router.withdraw(PRODUCT, DEFAULT_AMOUNT);
         vm.stopPrank();
     }
@@ -190,8 +209,10 @@ contract ConduitRouterTest is Test {
 
     // ── settle ────────────────────────────────────────────────────────────────
 
-    function test_settle_revertsNotImplemented() public {
-        vm.expectRevert(NotImplemented.selector);
+    // v3: settle() reverts NotConfigured when receiptNFT has not been set on the router.
+    // (The old NotImplemented behaviour was the v2 stub — v3 delegates to the adapter.)
+    function test_settle_revertsNotConfigured() public {
+        vm.expectRevert(NotConfigured.selector);
         router.settle(1, "");
     }
 
@@ -201,7 +222,10 @@ contract ConduitRouterTest is Test {
         _approveAndDeposit(DEFAULT_AMOUNT, DEFAULT_MIN);
 
         // Verify router has no residual approval for the adapter
-        uint256 remaining = underlying.allowance(address(router), address(adapter));
+        uint256 remaining = underlying.allowance(
+            address(router),
+            address(adapter)
+        );
         assertEq(remaining, 0, "router approval not cleaned up");
     }
 
