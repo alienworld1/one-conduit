@@ -2,7 +2,14 @@
 pragma solidity ^0.8.28;
 
 import "forge-std/Test.sol";
-import {XCMAdapter, ReceiptIdMismatch, NotImplemented, WithdrawalNotSupported, ZeroAmount, XCMDispatched} from "../src/XCMAdapter.sol";
+import {
+    XCMAdapter,
+    ReceiptIdMismatch,
+    InvalidSettlementProof,
+    WithdrawalNotSupported,
+    ZeroAmount,
+    XCMDispatched
+} from "../src/XCMAdapter.sol";
 import {
     ConduitRouter,
     NotConfigured,
@@ -302,8 +309,14 @@ contract XCMAdapterTest is Test {
         xcmAdapter.withdraw(1, alice);
     }
 
-    function test_settle_stub_reverts_NotImplemented() public {
-        vm.expectRevert(NotImplemented.selector);
+    function test_settle_emptyProof_reverts_InvalidSettlementProof() public {
+        _deposit(DEPOSIT_AMOUNT);
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidSettlementProof.selector,
+                uint256(1)
+            )
+        );
         xcmAdapter.settle(1, "");
     }
 
@@ -390,9 +403,14 @@ contract XCMAdapterTest is Test {
         // NFT token ID 1 exists and belongs to alice.
         assertEq(nft.ownerOf(1), alice);
 
-        // settle() delegation: router → xcmAdapter.settle() → reverts NotImplemented.
-        // That revert PROVES the delegation path reached the adapter's settle() stub.
-        vm.expectRevert(NotImplemented.selector);
+        // settle() delegation: router → xcmAdapter.settle().
+        // Empty proof should fail with InvalidSettlementProof from adapter.
+        vm.expectRevert(
+            abi.encodeWithSelector(
+                InvalidSettlementProof.selector,
+                uint256(1)
+            )
+        );
         router.settle(1, "");
     }
 

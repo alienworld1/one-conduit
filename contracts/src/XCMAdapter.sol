@@ -20,7 +20,8 @@ import {IERC20} from "./interfaces/IERC20.sol";
  *   5. Mint PendingReceiptNFT to recipient.
  *   6. Emit XCMDispatched.
  *
- * Phase 2 settle() -- stub. Module 7 implements full settlement.
+ * Phase 2 settle() verifies relayer proof, releases escrow to current NFT holder,
+ * and burns the settled receipt.
  *
  * Testnet note: xcmMessageTemplate encodes a FIXED 1 DOT amount (10_000_000_000 planck).
  * The actual deposited amount is escrowed correctly. The fixed-amount mismatch is a testnet
@@ -54,9 +55,13 @@ import {IERC20} from "./interfaces/IERC20.sol";
 
 // ---- Inline minimal interfaces ----------------------------------------------
 
-/// @dev Only deposit() is needed here. release() is called in Module 7.
+/// @dev EscrowVault interface used by XCMAdapter for Phase 1 and Phase 2.
 interface IEscrowVault {
     function deposit(uint256 receiptId, address token, uint256 amount) external;
+
+    function release(uint256 receiptId, address to) external;
+
+    function getEscrow(uint256 receiptId) external view returns (address token, uint256 amount, bool released);
 }
 
 /// @dev Registry interface -- same minimal pattern as LocalLendingAdapter.
@@ -69,8 +74,11 @@ interface IConduitRegistry {
 /// @dev Fired when PendingReceiptNFT mints a different ID than we pre-read. Should never happen.
 error ReceiptIdMismatch(uint256 expected, uint256 actual);
 
-/// @dev settle() stub -- Module 7 fills this in.
-error NotImplemented();
+/// @dev Fired when a receipt was already settled.
+error ReceiptAlreadySettled(uint256 receiptId);
+
+/// @dev Fired when settlement proof is invalid for the target receipt.
+error InvalidSettlementProof(uint256 receiptId);
 
 /// @dev withdraw() is not supported for XCM products in v1.
 error WithdrawalNotSupported();
@@ -99,6 +107,12 @@ event XCMDispatched(
 ///         the message parses and weighs correctly. Phase 1 remains successful so the
 ///         receipt workflow can proceed while preserving traceability of the attempt.
 event XCMExecuteResult(bool success, bytes returndata);
+
+/// @notice Emitted after successful Phase 2 settlement.
+/// @param holder          Current receipt owner who receives released funds.
+/// @param receiptId       Settled receipt ID.
+/// @param amountReleased  Amount released from EscrowVault.
+event Settled(address indexed holder, uint256 indexed receiptId, uint256 amountReleased);
 
 // ---- Contract --------------------------------------------------------------
 
@@ -236,16 +250,61 @@ contract XCMAdapter is IYieldAdapter, ISettleable {
         emit XCMDispatched(recipient, productId, amount, tokenId, keccak256(xcmMessageTemplate));
     }
 
-    // ---- Phase 2 settle -- STUB --------------------------------------------
+    // ---- Phase 2 settle ----------------------------------------------------
 
-    /// @notice Settle a pending receipt. Module 7 implements the real logic.
-    /// @dev    Signature is final -- do not change. Module 7 will:
-    ///         1. Verify msg.sender == relayerAddress (or proof-based auth).
-    ///         2. Validate proof bytes against an on-chain commitment.
-    ///         3. Call EscrowVault.release(receiptId, nft.ownerOf(receiptId)).
-    ///         4. Mark the NFT as settled and burn it.
-    function settle(uint256, bytes calldata) external pure {
-        revert NotImplemented();
+    /// @notice Settle a pending receipt with a relayer-signed proof.
+    /// @dev    Settlement pays the current receipt holder, not the original depositor.
+    function settle(uint256 receiptId, bytes calldata proof) external {
+        if (IPendingReceiptNFT(receiptNFT).isSettled(receiptId)) {
+            revert ReceiptAlreadySettled(receiptId);
+        }
+
+        // ownerOf() reverts for non-existent receipts.
+        address currentHolder = IPendingReceiptNFT(receiptNFT).ownerOf(receiptId);
+
+        _verifyProof(receiptId, proof);
+
+        (, uint256 releasedAmount, ) = IEscrowVault(escrowVault).getEscrow(receiptId);
+
+        // Mark settled before external token transfer to guard against re-entrancy loops.
+        IPendingReceiptNFT(receiptNFT).markSettled(receiptId);
+        IEscrowVault(escrowVault).release(receiptId, currentHolder);
+        IPendingReceiptNFT(receiptNFT).burn(receiptId);
+
+        emit Settled(currentHolder, receiptId, releasedAmount);
+    }
+
+    /// @dev Verifies a packed 65-byte (r,s,v) EIP-191 personal-sign signature by relayerAddress.
+    function _verifyProof(uint256 receiptId, bytes calldata proof) internal view {
+        bytes32 messageHash = keccak256(
+            abi.encodePacked(
+                "OneConduit:settle:",
+                block.chainid,
+                address(this),
+                receiptId
+            )
+        );
+
+        bytes32 ethSignedHash = keccak256(
+            abi.encodePacked("\x19Ethereum Signed Message:\n32", messageHash)
+        );
+
+        if (proof.length != 65) revert InvalidSettlementProof(receiptId);
+
+        bytes32 r;
+        bytes32 s;
+        uint8 v;
+        assembly {
+            r := calldataload(proof.offset)
+            s := calldataload(add(proof.offset, 32))
+            v := byte(0, calldataload(add(proof.offset, 64)))
+        }
+
+        // Malleable signatures are acceptable in v1 because the receipt can only be settled once.
+        address recovered = ecrecover(ethSignedHash, v, r, s);
+        if (recovered == address(0) || recovered != relayerAddress) {
+            revert InvalidSettlementProof(receiptId);
+        }
     }
 
     // ---- IYieldAdapter: view functions -------------------------------------

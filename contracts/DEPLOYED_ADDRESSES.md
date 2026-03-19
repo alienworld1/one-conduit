@@ -60,6 +60,8 @@ XCM ProductId:
 0xdd8f8d3075abdebf7d685b0ccf77a86310e9926882318d1daa27caa9dca971c9
 XCM template keccak256:
 0xf74fb7eab26e94efd316c23ecd1e52cf07c56ffd42ae37a2ec91f5e6b3d4e20f
+XCMAdapter.relayerAddress():
+0x6Bee0885A5d7c621215AD773a8c692a1bD16Aa60
 
 ### Key Transactions — XCM Phase 1
 
@@ -67,6 +69,13 @@ XCM template keccak256:
 |---|---|
 | Phase 1 deposit (Demo Scene 3) | _pending_ |
 | XCM precompile internal call visible at `0x00000000000000000000000000000000000a0000` | *(see deposit tx trace in Blockscout)* |
+
+### Module 7 — Settlement Transactions
+
+| Action | Tx Hash |
+|---|---|
+| Receipt transfer (Alice -> Bob) | _pending - run demo sequence_ |
+| Settlement (relayer `router.settle`) | _pending - run `npx tsx scripts/relayer.ts settle <id>`_ |
 
 ### Module 7 Prerequisite Verification (Receipt NFT)
 

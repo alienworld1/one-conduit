@@ -31,4 +31,16 @@ interface IPendingReceiptNFT {
         address to,
         ReceiptData calldata data
     ) external returns (uint256 tokenId);
+
+    /// @notice Returns current owner of a receipt token, reverts if token does not exist.
+    function ownerOf(uint256 tokenId) external view returns (address);
+
+    /// @notice Returns whether a receipt has been marked as settled.
+    function isSettled(uint256 tokenId) external view returns (bool);
+
+    /// @notice Marks a receipt as settled. Restricted to adapter in implementation.
+    function markSettled(uint256 tokenId) external;
+
+    /// @notice Burns a receipt token after it is marked settled.
+    function burn(uint256 tokenId) external;
 }
