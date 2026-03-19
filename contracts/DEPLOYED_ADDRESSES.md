@@ -47,13 +47,13 @@
 
 ## Module 6 — XCMAdapter + ConduitRouter v3
 
-ConduitRegistry (v2):     0xF89A63A06719Fc6D7CF4cAE057951D0E1677d966
-EscrowVault (v2):         0x38be3A868778DF3fC6E37c25EBc4cf29f81077b2
-PendingReceiptNFT (v2):   0x7790095A266eFFF29748C23E467212E7c3F5bB38
-XCMAdapter (v2):          0x3cd2850554c8F271B7Fe2CEa77C05fF3dDcdE092
-ConduitRouter (v3, new):  0x64645e2a9b21529781d55232b837f2639eFE9f3D
+ConduitRegistry (v2):     0x7a32F47C190BCa3eDC20683e138d90E91f2cb82B
+EscrowVault (v2):         0xA1bcADa3388f1A89CdAa15182E3A56B6FDD1975f
+PendingReceiptNFT (v2):   0x1376f5e8338ca0962FE59CC28d0824E2F44E84e5
+XCMAdapter (v2):          0x91bfFE24DCAE154D9aE26374AA4C8c460192d4e0
+ConduitRouter (v3, new):  0x1F6525b86EF8E32513Eb5F15528b553297ee3643
 RiskOracle (unchanged):   0x925287C7F2BC699A7874FE66Aacc95da432094B3
-MockDOT (deployed):       0xC6a2FabD29a80b04b16bd72eFa7c3016213147b1
+MockDOT (deployed):       0x6C242AdFF547877Ad6719b4785b45E7238d28D94
 LocalLendingAdapter (unchanged): 0x5b50eaE5Fd7b3e09687938FA9D69ccc6a9200746
 
 XCM ProductId:
@@ -67,6 +67,14 @@ XCM template keccak256:
 |---|---|
 | Phase 1 deposit (Demo Scene 3) | _pending_ |
 | XCM precompile internal call visible at `0x00000000000000000000000000000000000a0000` | *(see deposit tx trace in Blockscout)* |
+
+### Module 7 Prerequisite Verification (Receipt NFT)
+
+| Check | Result |
+|---|---|
+| `cast call 0x1376f5e8338ca0962FE59CC28d0824E2F44E84e5 "markSettled(uint256)" 1` | reverted with `0x82b42900` (`Unauthorized`) |
+
+This confirms `markSettled(uint256)` exists on the deployed receipt NFT and is adapter-protected.
 
 ---
 

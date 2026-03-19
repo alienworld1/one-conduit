@@ -73,4 +73,33 @@ contract PendingReceiptNFTTest is Test {
 
         assertTrue(nft.isSettled(tokenId));
     }
+
+    function test_MarkSettled_OnlyAdapterAndSingleUse() public {
+        nft.setAdapter(adapter);
+
+        PendingReceiptNFT.ReceiptData memory data = PendingReceiptNFT.ReceiptData({
+            productId: bytes32(uint256(1)),
+            amount: 100,
+            originalDepositor: alice,
+            dispatchBlock: 1234,
+            settled: false
+        });
+
+        vm.prank(adapter);
+        uint256 tokenId = nft.mint(alice, data);
+
+        vm.prank(alice);
+        vm.expectRevert(PendingReceiptNFT.Unauthorized.selector);
+        nft.markSettled(tokenId);
+
+        vm.prank(adapter);
+        nft.markSettled(tokenId);
+        assertTrue(nft.isSettled(tokenId));
+
+        vm.prank(adapter);
+        vm.expectRevert(
+            abi.encodeWithSelector(PendingReceiptNFT.AlreadySettled.selector, tokenId)
+        );
+        nft.markSettled(tokenId);
+    }
 }

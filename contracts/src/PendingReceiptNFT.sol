@@ -87,6 +87,12 @@ contract PendingReceiptNFT {
         emit ReceiptSettled(tokenId, currentOwner);
     }
 
+    function markSettled(uint256 tokenId) external onlyAdapter {
+        if (!_exists(tokenId)) revert TokenNotFound(tokenId);
+        if (receipts[tokenId].settled) revert AlreadySettled(tokenId);
+        receipts[tokenId].settled = true;
+    }
+
     function isSettled(uint256 tokenId) external view returns (bool) {
         return receipts[tokenId].settled;
     }
