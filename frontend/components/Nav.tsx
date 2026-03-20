@@ -13,7 +13,7 @@ type NavItem = {
 const items: NavItem[] = [
   { href: "/", label: "Products" },
   { href: "/receipts", label: "Receipts" },
-  { href: "/docs", label: "Docs" },
+  { href: "/docs/agent-guide", label: "Docs" },
 ];
 
 export function Nav() {
@@ -33,7 +33,7 @@ export function Nav() {
         <div className="flex items-center gap-5">
           <div className="hidden items-center gap-5 sm:flex">
             {items.map((item) => {
-              const active = pathname === item.href;
+              const active = item.label === "Docs" ? pathname.startsWith("/docs") : pathname === item.href;
 
               return (
                 <Link

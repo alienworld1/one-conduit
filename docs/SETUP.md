@@ -19,11 +19,11 @@
 | Parameter | Value |
 |---|---|
 | Chain ID | `420420417` |
-| ETH-RPC | `https://testnet-passet-hub-eth-rpc.polkadot.io` |
+| ETH-RPC | `https://eth-rpc-testnet.polkadot.io/` |
 | Block explorer | `https://blockscout-testnet.polkadot.io` |
-| Faucet | `https://paritytech.github.io/polkadot-testnet-faucet/` |
+| Faucet | `https://faucet.polkadot.io/` |
 | Native token | `PAS` |
-| Existential deposit | `0.01 PAS` |
+| Existential deposit | `5000 PAS` |
 
 ---
 
@@ -148,7 +148,7 @@ Create `.env` at the project root. It is `.gitignore`'d.
 ```bash
 # .env
 PRIVATE_KEY=0x...          # deployer wallet private key (hex, with 0x prefix)
-ETH_RPC_URL=https://testnet-passet-hub-eth-rpc.polkadot.io
+ETH_RPC_URL=https://eth-rpc-testnet.polkadot.io/
 ```
 
 Load before running any `forge` or `cast` command:
@@ -279,7 +279,7 @@ The `polkadot-testnet` named chain is only recognised in the nightly build. If `
 - [ ] `resolc --version` → `1.0.0`
 - [ ] `forge --version` → foundry-polkadot nightly
 - [ ] `cargo contract --version` → `6.x.x`
-- [ ] `cast chain-id --rpc-url https://testnet-passet-hub-eth-rpc.polkadot.io` → `420420417`
+- [ ] `cast chain-id --rpc-url https://eth-rpc-testnet.polkadot.io/` → `420420417`
 - [ ] Deployer wallet has PAS balance on [blockscout-testnet.polkadot.io](https://blockscout-testnet.polkadot.io)
 - [ ] `forge build --resolc` in `contracts/` succeeds
 - [ ] `HelloPVM` deployed — address in `DEPLOYED_ADDRESSES.md`
