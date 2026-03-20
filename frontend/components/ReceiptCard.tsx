@@ -1,7 +1,7 @@
 "use client";
 
 import { useMemo, useState } from "react";
-import { CircleCheck, Copy, Send, Ticket } from "lucide-react";
+import { CircleCheck, Copy, Send, Terminal, Ticket } from "lucide-react";
 import type { Address } from "viem";
 import { Badge } from "@/components/Badge";
 import { TransferModal } from "@/components/TransferModal";
@@ -35,15 +35,7 @@ function SettleButton({
 
   const relayerCommand = `npx tsx scripts/relayer.ts settle ${receiptId}`;
 
-  function handleSettle() {
-    navigator.clipboard
-      .writeText(relayerCommand)
-      .then(() => {
-        setCopied(true);
-        setTimeout(() => setCopied(false), 2000);
-      })
-      .catch(() => {});
-
+  function startPolling() {
     setPolling(true);
     const interval = setInterval(async () => {
       const settled = await publicClient
@@ -69,6 +61,21 @@ function SettleButton({
     }, 300_000);
   }
 
+  function handleSettle() {
+    navigator.clipboard
+      .writeText(relayerCommand)
+      .then(() => {
+        setCopied(true);
+      })
+      .catch(() => {
+        setCopied(false);
+      });
+
+    if (!polling) {
+      startPolling();
+    }
+  }
+
   return (
     <div className="flex-1">
       <button
@@ -80,16 +87,33 @@ function SettleButton({
           polling ? "cursor-not-allowed bg-accent/40" : "bg-accent hover:bg-accent-dim",
         ].join(" ")}
       >
-        {polling ? "WAITING..." : copied ? "COPIED!" : "SETTLE"}
+        {polling ? "WATCHING SETTLEMENT..." : copied ? "COMMAND COPIED" : "COPY + START WATCH"}
       </button>
-      {copied && (
-        <p className="mt-1 text-center text-[10px] font-body text-text-muted">
-          Command copied. Run it in terminal.
+
+      <div className="mt-3 border border-border bg-surface p-3">
+        <div className="mb-2 flex items-center gap-1.5 text-text-primary">
+          <Terminal size={14} strokeWidth={1.5} />
+          <span className="text-[11px] font-body tracking-widest uppercase">Relayer Step Required</span>
+        </div>
+        <p className="mb-2 text-[12px] font-body text-text-secondary">
+          Run this command in a terminal with the project checked out. The card will auto-update when on-chain settlement is detected.
         </p>
-      )}
-      {polling && (
-        <p className="mt-1 text-center text-[10px] font-body text-text-muted">Polling settlement status...</p>
-      )}
+        <div className="rounded-sm border border-border-subtle bg-void px-3 py-2">
+          <p className="tabular break-all font-data text-[12px] text-text-primary">{relayerCommand}</p>
+        </div>
+        <div className="mt-2 space-y-1">
+          {copied ? (
+            <p className="text-[11px] font-body text-success">Command copied to clipboard.</p>
+          ) : (
+            <p className="text-[11px] font-body text-text-muted">Use the button above to copy the command.</p>
+          )}
+          {polling ? (
+            <p className="text-[11px] font-body text-text-muted">Watching every 4s for up to 5 minutes.</p>
+          ) : (
+            <p className="text-[11px] font-body text-text-muted">After running the command, click this button again to start watching settlement.</p>
+          )}
+        </div>
+      </div>
     </div>
   );
 }

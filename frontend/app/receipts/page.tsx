@@ -17,6 +17,18 @@ export default function ReceiptsPage() {
         <span className="font-body text-[11px] tracking-widest text-text-muted uppercase">XCM in-flight assets</span>
       </div>
 
+      {address ? (
+        <div className="mb-6 border border-border bg-surface p-4">
+          <p className="text-[11px] font-body tracking-widest text-text-muted uppercase">Settlement Guide</p>
+          <p className="mt-2 text-[13px] font-body text-text-secondary">
+            Settlement is relayer-assisted in v1. Use the command shown on each pending receipt card to trigger on-chain settlement.
+          </p>
+          <p className="mt-1 text-[13px] font-body text-text-secondary">
+            Step 1: Copy the command from the card. Step 2: Run it in a terminal. Step 3: The card detects settlement automatically.
+          </p>
+        </div>
+      ) : null}
+
       {!address ? (
         <div className="border border-border bg-surface p-12 text-center">
           <p className="mb-4 text-[13px] font-body text-text-secondary">
