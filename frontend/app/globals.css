@@ -69,34 +69,98 @@
   }
 }
 
+@layer components {
+  .primary-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border: none;
+    border-radius: 2px;
+    background-color: var(--color-accent);
+    color: white;
+    padding: 10px 20px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: background-color 120ms ease;
+    position: relative;
+    overflow: hidden;
+  }
+
+  .primary-button:hover:not(:disabled) {
+    background-color: var(--color-accent-dim);
+  }
+
+  .primary-button:active:not(:disabled) {
+    transform: scale(0.98);
+    transition: transform 80ms linear;
+  }
+
+  .primary-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+
+  .primary-button.shimmer {
+    background-image: linear-gradient(
+      90deg,
+      var(--color-accent) 0%,
+      var(--color-accent-dim) 40%,
+      var(--color-accent) 80%
+    );
+    background-size: 200% 100%;
+    animation: shimmer-sweep 1.2s linear infinite;
+  }
+
+  .ghost-button {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 2px;
+    background: transparent;
+    color: var(--color-text-secondary);
+    border: 1px solid var(--color-border);
+    padding: 10px 20px;
+    font-family: var(--font-body);
+    font-size: 13px;
+    font-weight: 500;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+    cursor: pointer;
+    transition: border-color 120ms ease, color 120ms ease;
+  }
+
+  .ghost-button:hover:not(:disabled) {
+    border-color: var(--color-text-muted);
+    color: var(--color-text-primary);
+  }
+
+  .ghost-button:active:not(:disabled) {
+    transform: scale(0.98);
+    transition: transform 80ms linear;
+  }
+
+  .ghost-button:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+  }
+}
+
 @layer utilities {
   .tabular {
     font-variant-numeric: tabular-nums;
     font-feature-settings: "tnum";
   }
 
-  .btn-shimmer {
-    position: relative;
-    overflow: hidden;
-  }
-
-  .btn-shimmer::after {
-    content: "";
-    position: absolute;
-    top: 0;
-    left: -140%;
-    width: 90%;
-    height: 100%;
-    background: linear-gradient(90deg, transparent, rgb(255 255 255 / 18%), transparent);
-    animation: shimmer 1.1s linear infinite;
-  }
-
-  @keyframes shimmer {
+  @keyframes shimmer-sweep {
     from {
-      left: -140%;
+      background-position: 200% 0;
     }
     to {
-      left: 160%;
+      background-position: -200% 0;
     }
   }
 

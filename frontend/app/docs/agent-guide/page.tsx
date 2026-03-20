@@ -1,4 +1,5 @@
 import { CodeBlock } from "@/components/CodeBlock";
+import { PageWrapper } from "@/components/PageWrapper";
 
 const codeDiscover = `import { createPublicClient, defineChain, http } from "viem"
 
@@ -276,9 +277,10 @@ await walletClient.writeContract({
 
 export default function AgentGuidePage() {
   return (
-    <div className="mx-auto w-full max-w-7xl px-4 py-16 md:px-6">
-      <div className="max-w-170">
-        <article className="leading-[1.8] text-text-secondary">
+    <PageWrapper>
+      <div className="mx-auto w-full max-w-7xl px-4 py-16 md:px-6">
+        <div className="max-w-170">
+          <article className="leading-[1.8] text-text-secondary">
           <h1 className="font-display text-[28px] font-medium text-text-primary">Agent Guide</h1>
           <p className="mb-6 mt-3 text-[14px]">
             1Conduit is fully programmable via smart contract calls. No UI or off-chain API required.
@@ -410,8 +412,9 @@ export default function AgentGuidePage() {
               Settlement requires the relayer key. For testnet usage, contact the deployer.
             </li>
           </ul>
-        </article>
+          </article>
+        </div>
       </div>
-    </div>
+    </PageWrapper>
   );
 }

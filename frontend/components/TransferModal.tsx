@@ -88,7 +88,7 @@ export function TransferModal({ receiptId, onClose, onTransferred }: TransferMod
           <button
             type="button"
             onClick={onClose}
-            className="flex-1 rounded-sm border border-border px-4 py-2 text-[11px] font-body tracking-widest text-text-secondary uppercase transition-colors duration-120 hover:border-text-muted hover:text-text-primary"
+            className="ghost-button flex-1 px-4 py-2 text-[11px] tracking-widest"
           >
             Cancel
           </button>
@@ -97,10 +97,8 @@ export function TransferModal({ receiptId, onClose, onTransferred }: TransferMod
             onClick={handleTransfer}
             disabled={!isValidAddress || status === "pending" || status === "done"}
             className={[
-              "flex-1 rounded-sm px-4 py-2 text-[11px] font-body tracking-widest text-white uppercase transition-colors duration-120",
-              !isValidAddress || status === "pending" || status === "done"
-                ? "cursor-not-allowed bg-accent/40"
-                : "bg-accent hover:bg-accent-dim",
+              "primary-button flex-1 px-4 py-2 text-[11px] tracking-widest",
+              status === "pending" ? "shimmer" : "",
             ].join(" ")}
           >
             {status === "pending" ? "Sending..." : status === "done" ? "Sent" : "Confirm Transfer"}

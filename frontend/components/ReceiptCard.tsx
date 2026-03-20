@@ -83,8 +83,8 @@ function SettleButton({
         onClick={handleSettle}
         disabled={polling}
         className={[
-          "w-full rounded-sm px-4 py-2 text-[11px] font-body tracking-widest text-white uppercase transition-colors duration-120",
-          polling ? "cursor-not-allowed bg-accent/40" : "bg-accent hover:bg-accent-dim",
+          "primary-button w-full px-4 py-2 text-[11px] tracking-widest",
+          polling ? "shimmer" : "",
         ].join(" ")}
       >
         {polling ? "WATCHING SETTLEMENT..." : copied ? "COMMAND COPIED" : "COPY + START WATCH"}
@@ -195,7 +195,7 @@ export function ReceiptCard({ receipt, connectedAddress, onUpdate }: ReceiptCard
               <button
                 type="button"
                 onClick={() => setShowTransferModal(true)}
-                className="flex flex-1 items-center justify-center gap-1.5 rounded-sm border border-border px-4 py-2 text-[11px] font-body tracking-widest text-text-secondary uppercase transition-colors duration-120 hover:border-text-muted hover:text-text-primary"
+                className="ghost-button flex flex-1 items-center gap-1.5 px-4 py-2 text-[11px] tracking-widest"
               >
                 <Send size={14} strokeWidth={1.5} />
                 Transfer

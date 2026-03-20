@@ -74,7 +74,7 @@ export function DepositForm({ product }: { product: Product }) {
           type="button"
           onClick={connect}
           disabled={isConnecting}
-          className="rounded-sm border border-border px-4 py-2 text-[13px] font-body tracking-wider text-text-secondary uppercase transition-colors duration-120 hover:border-text-muted hover:text-text-primary"
+          className="ghost-button"
         >
           {isConnecting ? "CONNECTING..." : "CONNECT WALLET"}
         </button>
@@ -138,11 +138,8 @@ export function DepositForm({ product }: { product: Product }) {
           disabled={current.disabled || amountRaw === BigInt(0)}
           onClick={onDeposit}
           className={[
-            "w-full rounded-sm px-5 py-2.5 text-[13px] font-body tracking-wider text-white uppercase transition-colors duration-120",
-            current.disabled || amountRaw === BigInt(0)
-              ? "cursor-not-allowed bg-accent/40"
-              : "bg-accent hover:bg-accent-dim",
-            state.status === "approving" || state.status === "depositing" ? "btn-shimmer" : "",
+            "primary-button w-full px-5 py-2.5",
+            state.status === "approving" || state.status === "depositing" ? "shimmer" : "",
           ].join(" ")}
         >
           {current.label}

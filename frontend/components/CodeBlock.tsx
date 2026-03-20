@@ -43,7 +43,7 @@ export function CodeBlock({ code, language, filename }: CodeBlockProps) {
         </button>
       </div>
       <pre className="overflow-x-auto px-4 py-4">
-        <code className="font-data text-[13px] leading-[1.7] text-text-primary">
+        <code className="font-data text-[13px] leading-[1.7] text-text-primary whitespace-pre">
           <HighlightedCode code={code} language={language} />
         </code>
       </pre>

@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { LayoutGrid, Terminal, Ticket, Wallet } from "lucide-react";
 import { usePathname } from "next/navigation";
 import { useWallet } from "@/hooks/useWallet";
 import { formatAddress } from "@/lib/format";
@@ -19,6 +20,9 @@ const items: NavItem[] = [
 export function Nav() {
   const pathname = usePathname();
   const { address, connect, isConnecting } = useWallet();
+  const isProductsActive = pathname === "/" || pathname.startsWith("/deposit");
+  const isReceiptsActive = pathname === "/receipts";
+  const isDocsActive = pathname.startsWith("/docs");
 
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border bg-surface">
@@ -30,10 +34,37 @@ export function Nav() {
           1CONDUIT
         </Link>
 
-        <div className="flex items-center gap-5">
+        <div className="flex items-center gap-4 sm:gap-5">
+          <div className="flex items-center gap-3 sm:hidden">
+            <Link
+              href="/"
+              title="Products"
+              className={isProductsActive ? "text-accent" : "text-text-secondary hover:text-text-primary"}
+            >
+              <LayoutGrid size={16} strokeWidth={1.5} />
+            </Link>
+            <Link
+              href="/receipts"
+              title="Receipts"
+              className={isReceiptsActive ? "text-accent" : "text-text-secondary hover:text-text-primary"}
+            >
+              <Ticket size={16} strokeWidth={1.5} />
+            </Link>
+            <Link
+              href="/docs/agent-guide"
+              title="Docs"
+              className={isDocsActive ? "text-accent" : "text-text-secondary hover:text-text-primary"}
+            >
+              <Terminal size={16} strokeWidth={1.5} />
+            </Link>
+          </div>
+
           <div className="hidden items-center gap-5 sm:flex">
             {items.map((item) => {
-              const active = item.label === "Docs" ? pathname.startsWith("/docs") : pathname === item.href;
+              const active =
+                (item.label === "Products" && isProductsActive) ||
+                (item.label === "Receipts" && isReceiptsActive) ||
+                (item.label === "Docs" && isDocsActive);
 
               return (
                 <Link
@@ -53,15 +84,26 @@ export function Nav() {
           </div>
 
           {address ? (
-            <span className="tabular font-data text-[13px] text-text-secondary">{formatAddress(address)}</span>
+            <>
+              <span className="hidden tabular font-data text-[13px] text-text-secondary sm:inline">
+                {formatAddress(address)}
+              </span>
+              <span className="inline-flex items-center text-text-secondary sm:hidden" title={formatAddress(address)}>
+                <Wallet size={16} strokeWidth={1.5} />
+              </span>
+            </>
           ) : (
             <button
               type="button"
               onClick={connect}
               disabled={isConnecting}
-              className="rounded-sm border border-border px-3 py-2 text-[13px] font-body tracking-wider text-text-secondary uppercase transition-colors duration-120 hover:border-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+              className="ghost-button px-3 py-2"
+              title="Connect Wallet"
             >
-              {isConnecting ? "Connecting..." : "Connect Wallet"}
+              <span className="hidden sm:inline">{isConnecting ? "Connecting..." : "Connect Wallet"}</span>
+              <span className="inline sm:hidden">
+                <Wallet size={16} strokeWidth={1.5} />
+              </span>
             </button>
           )}
         </div>
