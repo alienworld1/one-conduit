@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo, useState } from "react";
+import { useEffect, useMemo, useState } from "react";
 import type { Product } from "@/hooks/useProducts";
 import { AmountInput } from "@/components/AmountInput";
 import { TransactionStatus } from "@/components/TransactionStatus";
@@ -8,7 +8,8 @@ import { useQuote } from "@/hooks/useQuote";
 import { useDeposit } from "@/hooks/useDeposit";
 import { useWallet } from "@/hooks/useWallet";
 import { formatTokenAmount } from "@/lib/format";
-import { TOKEN_META } from "@/lib/contracts";
+import { erc20Abi, TOKEN_META } from "@/lib/contracts";
+import { publicClient } from "@/lib/viem";
 
 function parseAmount(display: string, decimals: number): bigint {
   const [whole, frac = ""] = display.split(".");
@@ -19,14 +20,32 @@ function parseAmount(display: string, decimals: number): bigint {
 }
 
 export function DepositForm({ product }: { product: Product }) {
-  const { address, connect, isConnecting, error: walletError } = useWallet();
+  const { address, walletClient, connect, isConnecting, error: walletError } = useWallet();
   const { state, deposit, reset } = useDeposit(product);
   const [amount, setAmount] = useState("");
   const [minRiskScore, setMinRiskScore] = useState(60);
+  const [walletBalance, setWalletBalance] = useState<bigint | null>(null);
 
   const token = product.isXCM ? TOKEN_META.mockDOT : TOKEN_META.mUSDC;
   const amountRaw = useMemo(() => parseAmount(amount, token.decimals), [amount, token.decimals]);
   const quote = useQuote(product.productId, amountRaw, amountRaw);
+
+  useEffect(() => {
+    if (!address) {
+      setWalletBalance(null);
+      return;
+    }
+
+    publicClient
+      .readContract({
+        address: token.address,
+        abi: erc20Abi,
+        functionName: "balanceOf",
+        args: [address],
+      })
+      .then((balance) => setWalletBalance(balance as bigint))
+      .catch(() => setWalletBalance(null));
+  }, [address, token.address]);
 
   const buttonConfig = {
     idle: { label: "DEPOSIT", disabled: false },
@@ -42,7 +61,7 @@ export function DepositForm({ product }: { product: Product }) {
     if (state.status === "confirmed" || state.status === "error") {
       reset();
     }
-    await deposit(amountRaw, BigInt(minRiskScore));
+    await deposit(amountRaw, BigInt(minRiskScore), walletClient, address);
   }
 
   if (!address) {
@@ -74,6 +93,13 @@ export function DepositForm({ product }: { product: Product }) {
           decimals={token.decimals}
           disabled={state.status === "approving" || state.status === "depositing"}
         />
+
+        <div className="text-[11px] font-body text-text-muted">
+          Wallet balance:{" "}
+          {walletBalance !== null
+            ? `${formatTokenAmount(walletBalance, token.decimals)} ${token.symbol}`
+            : "—"}
+        </div>
 
         <div className="rounded-sm border border-border bg-surface p-4">
           <div className="mb-1 text-[11px] font-body tracking-widest text-text-muted uppercase">

@@ -12,11 +12,55 @@ export function TransactionStatus({ state }: TransactionStatusProps) {
   if (state.status === "idle") return null;
 
   if (state.status === "approving") {
-    return <p className="text-[13px] font-body text-text-secondary">Approving token spend...</p>;
+    if (state.phase === "signature") {
+      return (
+        <div className="rounded-sm border border-border bg-surface-2 p-3">
+          <p className="text-[13px] font-body text-text-secondary">Awaiting wallet signature for approve...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-sm border border-border bg-surface-2 p-3">
+        <p className="text-[13px] font-body text-text-secondary">Approve submitted. Waiting for chain confirmation...</p>
+        {state.txHash && (
+          <a
+            href={`https://blockscout-testnet.polkadot.io/tx/${state.txHash}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-block text-[11px] font-body text-accent underline"
+          >
+            View approve tx →
+          </a>
+        )}
+      </div>
+    );
   }
 
   if (state.status === "depositing") {
-    return <p className="text-[13px] font-body text-text-secondary">Sending deposit transaction...</p>;
+    if (state.phase === "signature") {
+      return (
+        <div className="rounded-sm border border-border bg-surface-2 p-3">
+          <p className="text-[13px] font-body text-text-secondary">Awaiting wallet signature for deposit...</p>
+        </div>
+      );
+    }
+
+    return (
+      <div className="rounded-sm border border-border bg-surface-2 p-3">
+        <p className="text-[13px] font-body text-text-secondary">Deposit submitted. Waiting for chain confirmation (can take 1-2 minutes)...</p>
+        {state.txHash && (
+          <a
+            href={`https://blockscout-testnet.polkadot.io/tx/${state.txHash}`}
+            target="_blank"
+            rel="noreferrer"
+            className="mt-1 inline-block text-[11px] font-body text-accent underline"
+          >
+            View deposit tx →
+          </a>
+        )}
+      </div>
+    );
   }
 
   if (state.status === "error") {

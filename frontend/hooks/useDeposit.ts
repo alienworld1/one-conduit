@@ -1,9 +1,13 @@
 "use client";
 
 import { useState } from "react";
-import { decodeEventLog, type TransactionReceipt } from "viem";
+import {
+  decodeEventLog,
+  type TransactionReceipt,
+  type WalletClient,
+  WaitForTransactionReceiptTimeoutError,
+} from "viem";
 import type { Product } from "@/hooks/useProducts";
-import { useWallet } from "@/hooks/useWallet";
 import { ADDRESSES, erc20Abi, riskOracleAbi, routerAbi, TOKEN_META } from "@/lib/contracts";
 import { publicClient, paseoAssetHub } from "@/lib/viem";
 
@@ -13,8 +17,8 @@ export type DepositResult =
 
 export type DepositState =
   | { status: "idle" }
-  | { status: "approving" }
-  | { status: "depositing" }
+  | { status: "approving"; txHash?: `0x${string}`; phase: "signature" | "network" }
+  | { status: "depositing"; txHash?: `0x${string}`; phase: "signature" | "network" }
   | { status: "confirmed"; result: DepositResult }
   | { status: "error"; message: string };
 
@@ -54,6 +58,19 @@ function parseContractError(err: unknown): string {
   if (msg.includes(riskSelector) || msg.includes("RiskScoreTooLow")) {
     return "Risk score too low. Reduce your minimum threshold or wait for the product score to improve.";
   }
+
+  // Custom error selector for InsufficientBalance(address,uint256,uint256)
+  const insufficientBalanceSelector = "0xdb42144d";
+  const insufficientMatch = msg.match(/0xdb42144d[0-9a-fA-F]{64}([0-9a-fA-F]{64})([0-9a-fA-F]{64})/);
+  if (insufficientMatch) {
+    const required = BigInt(`0x${insufficientMatch[1]}`);
+    const available = BigInt(`0x${insufficientMatch[2]}`);
+    return `Insufficient token balance for this amount. Required: ${required.toString()} raw units, available: ${available.toString()} raw units.`;
+  }
+  if (msg.includes(insufficientBalanceSelector) || lower.includes("insufficientbalance")) {
+    return "Insufficient token balance for this amount.";
+  }
+
   if (lower.includes("insufficientallowance") || lower.includes("allowance")) {
     return "Insufficient token allowance. The approval may have failed.";
   }
@@ -62,6 +79,9 @@ function parseContractError(err: unknown): string {
   }
   if (lower.includes("chain") || lower.includes("network")) {
     return "Please switch wallet network to Paseo Asset Hub and try again.";
+  }
+  if (lower.includes("execution reverted")) {
+    return "Call reverted before broadcast. No transaction was mined. Check amount, allowance, and risk threshold.";
   }
 
   return msg || "Transaction failed. Check your wallet and try again.";
@@ -94,10 +114,14 @@ function parseDepositResult(receipt: TransactionReceipt, isXCM: boolean): Parsed
 }
 
 export function useDeposit(product: Product) {
-  const { walletClient, address } = useWallet();
   const [state, setState] = useState<DepositState>({ status: "idle" });
 
-  async function deposit(amountRaw: bigint, minRiskScore: bigint) {
+  async function deposit(
+    amountRaw: bigint,
+    minRiskScore: bigint,
+    walletClient: WalletClient | null,
+    address: `0x${string}` | null,
+  ) {
     if (!walletClient || !address) {
       setState({ status: "error", message: "Connect wallet to continue." });
       return;
@@ -148,7 +172,7 @@ export function useDeposit(product: Product) {
       })) as bigint;
 
       if (allowance < amountRaw) {
-        setState({ status: "approving" });
+        setState({ status: "approving", phase: "signature" });
 
         let approveGas = GAS_FALLBACK_APPROVE;
         try {
@@ -174,10 +198,12 @@ export function useDeposit(product: Product) {
           gas: approveGas,
         });
 
+        setState({ status: "approving", phase: "network", txHash: approveHash });
+
         await publicClient.waitForTransactionReceipt({ hash: approveHash });
       }
 
-      setState({ status: "depositing" });
+      setState({ status: "depositing", phase: "signature" });
 
       let depositGas = GAS_FALLBACK_DEPOSIT;
       try {
@@ -203,7 +229,26 @@ export function useDeposit(product: Product) {
         gas: depositGas,
       });
 
-      const receipt = await publicClient.waitForTransactionReceipt({ hash: depositHash });
+      setState({ status: "depositing", phase: "network", txHash: depositHash });
+
+      let receipt: TransactionReceipt;
+      try {
+        receipt = await publicClient.waitForTransactionReceipt({
+          hash: depositHash,
+          timeout: 120_000,
+          pollingInterval: 2_000,
+        });
+      } catch (err) {
+        if (err instanceof WaitForTransactionReceiptTimeoutError) {
+          setState({
+            status: "error",
+            message: `Transaction submitted but not mined yet. Check Blockscout with tx hash: ${depositHash}`,
+          });
+          return;
+        }
+        throw err;
+      }
+
       if (receipt.status !== "success") {
         setState({
           status: "error",

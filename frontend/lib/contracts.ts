@@ -19,7 +19,9 @@ export const TOKEN_META = {
   mockDOT: {
     symbol: "MockDOT",
     address: ADDRESSES.mockDOT,
-    decimals: 18,
+    // Deployed MockDOT on Paseo currently exposes 6 decimals.
+    // Keep frontend encoding aligned with on-chain token units.
+    decimals: 6,
   },
   cYLD: {
     symbol: "cYLD",
