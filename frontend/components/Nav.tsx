@@ -2,6 +2,8 @@
 
 import Link from "next/link";
 import { usePathname } from "next/navigation";
+import { useWallet } from "@/hooks/useWallet";
+import { formatAddress } from "@/lib/format";
 
 type NavItem = {
   href: string;
@@ -16,6 +18,7 @@ const items: NavItem[] = [
 
 export function Nav() {
   const pathname = usePathname();
+  const { address, connect, isConnecting } = useWallet();
 
   return (
     <nav className="sticky top-0 z-50 h-14 border-b border-border bg-surface">
@@ -49,12 +52,18 @@ export function Nav() {
             })}
           </div>
 
-          <button
-            type="button"
-            className="rounded-sm border border-border px-3 py-2 text-[13px] font-body tracking-wider text-text-secondary uppercase transition-colors duration-120 hover:border-text-muted hover:text-text-primary"
-          >
-            Connect Wallet
-          </button>
+          {address ? (
+            <span className="tabular font-data text-[13px] text-text-secondary">{formatAddress(address)}</span>
+          ) : (
+            <button
+              type="button"
+              onClick={connect}
+              disabled={isConnecting}
+              className="rounded-sm border border-border px-3 py-2 text-[13px] font-body tracking-wider text-text-secondary uppercase transition-colors duration-120 hover:border-text-muted hover:text-text-primary disabled:cursor-not-allowed disabled:opacity-40"
+            >
+              {isConnecting ? "Connecting..." : "Connect Wallet"}
+            </button>
+          )}
         </div>
       </div>
     </nav>

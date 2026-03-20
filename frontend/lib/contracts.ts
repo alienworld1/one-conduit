@@ -10,6 +10,23 @@ export const ADDRESSES = {
   mockUSDC: "0x5FAfa9c09BC5d6b79fF0e3dBC0AaaB651eEB894C",
 } as const;
 
+export const TOKEN_META = {
+  mUSDC: {
+    symbol: "mUSDC",
+    address: ADDRESSES.mockUSDC,
+    decimals: 6,
+  },
+  mockDOT: {
+    symbol: "MockDOT",
+    address: ADDRESSES.mockDOT,
+    decimals: 18,
+  },
+  cYLD: {
+    symbol: "cYLD",
+    decimals: 6,
+  },
+} as const;
+
 export const LOCAL_PRODUCT_ID =
   "0x28f9cb741def117848906060ecc245d99a3b4e1b9afa666c115411a988c0de91" as const;
 
@@ -49,6 +66,23 @@ export const riskOracleAbi = [
     inputs: [{ name: "productId", type: "bytes32" }],
     outputs: [{ type: "uint256" }],
   },
+  {
+    type: "function",
+    stateMutability: "view",
+    name: "getScoreInputs",
+    inputs: [{ name: "productId", type: "uint256" }],
+    outputs: [
+      {
+        type: "tuple",
+        components: [
+          { name: "apyBps", type: "uint256" },
+          { name: "tvlUSD", type: "uint256" },
+          { name: "utilizationBps", type: "uint256" },
+          { name: "contractAgeDays", type: "uint256" },
+        ],
+      },
+    ],
+  },
 ] as const;
 
 export const routerAbi = [
@@ -82,6 +116,29 @@ export const routerAbi = [
       { name: "amount", type: "uint256" },
     ],
     outputs: [{ type: "uint256" }],
+  },
+  {
+    type: "event",
+    name: "Deposited",
+    inputs: [
+      { indexed: true, name: "user", type: "address" },
+      { indexed: true, name: "productId", type: "bytes32" },
+      { indexed: false, name: "amountIn", type: "uint256" },
+      { indexed: false, name: "tokensOut", type: "uint256" },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "XCMDispatched",
+    inputs: [
+      { indexed: true, name: "user", type: "address" },
+      { indexed: true, name: "productId", type: "bytes32" },
+      { indexed: false, name: "amount", type: "uint256" },
+      { indexed: false, name: "receiptId", type: "uint256" },
+      { indexed: false, name: "xcmMsgHash", type: "bytes32" },
+    ],
+    anonymous: false,
   },
 ] as const;
 
