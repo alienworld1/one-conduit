@@ -47,13 +47,13 @@
 
 ## Module 6 — XCMAdapter + ConduitRouter v3
 
-ConduitRegistry (v2):     0x7a32F47C190BCa3eDC20683e138d90E91f2cb82B
-EscrowVault (v2):         0xA1bcADa3388f1A89CdAa15182E3A56B6FDD1975f
-PendingReceiptNFT (v2):   0x1376f5e8338ca0962FE59CC28d0824E2F44E84e5
-XCMAdapter (v2):          0x91bfFE24DCAE154D9aE26374AA4C8c460192d4e0
-ConduitRouter (v3, new):  0x1F6525b86EF8E32513Eb5F15528b553297ee3643
+ConduitRegistry (v2):     0x2B29eDEdfbe33581673755d217Da600f92eA7CC6
+EscrowVault (v2):         0x19EA950c5468D8b2Da584F777124AC3a017d0cA5
+PendingReceiptNFT (v2):   0x2B6b31eF4e39565BDd1a914fA70B8451812F7210
+XCMAdapter (v2):          0xF605c8B148A6Af6B6ABC049074fBFaa653219F46
+ConduitRouter (v3, new):  0x212349691746d378DC814AF70674474843F695BD
 RiskOracle (unchanged):   0x925287C7F2BC699A7874FE66Aacc95da432094B3
-MockDOT (deployed):       0x6C242AdFF547877Ad6719b4785b45E7238d28D94
+MockDOT (deployed):       0x629FA1da2eafa71456F72e0A8dA208D25A9D6bd2
 LocalLendingAdapter (unchanged): 0x5b50eaE5Fd7b3e09687938FA9D69ccc6a9200746
 
 XCM ProductId:
@@ -67,7 +67,7 @@ XCMAdapter.relayerAddress():
 
 | Action | Tx Hash |
 |---|---|
-| Phase 1 deposit (Demo Scene 3) | _pending_ |
+| Phase 1 deposit (Demo Scene 3) | 0x0572346cf311bbe3d6df02f363f636aa043d3a19099eb771e52fc6f0b65d88c0 |
 | XCM precompile internal call visible at `0x00000000000000000000000000000000000a0000` | *(see deposit tx trace in Blockscout)* |
 
 ### Module 7 — Settlement Transactions
@@ -81,7 +81,7 @@ XCMAdapter.relayerAddress():
 
 | Check | Result |
 |---|---|
-| `cast call 0x1376f5e8338ca0962FE59CC28d0824E2F44E84e5 "markSettled(uint256)" 1` | reverted with `0x82b42900` (`Unauthorized`) |
+| `cast call 0x2B6b31eF4e39565BDd1a914fA70B8451812F7210 "markSettled(uint256)" 1` | reverted with `0x82b42900` (`Unauthorized`) |
 
 This confirms `markSettled(uint256)` exists on the deployed receipt NFT and is adapter-protected.
 

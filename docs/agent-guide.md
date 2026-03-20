@@ -14,13 +14,13 @@ The full flow for agents is:
 
 | Contract | Address |
 |---|---|
-| ConduitRegistry (v2) | `0x7a32F47C190BCa3eDC20683e138d90E91f2cb82B` |
-| ConduitRouter (v3) | `0x1F6525b86EF8E32513Eb5F15528b553297ee3643` |
+| ConduitRegistry (v2) | `0x2B29eDEdfbe33581673755d217Da600f92eA7CC6` |
+| ConduitRouter (v3) | `0x212349691746d378DC814AF70674474843F695BD` |
 | RiskOracle (Solidity) | `0x925287C7F2BC699A7874FE66Aacc95da432094B3` |
-| XCMAdapter (v2) | `0x91bfFE24DCAE154D9aE26374AA4C8c460192d4e0` |
-| EscrowVault (v2) | `0xA1bcADa3388f1A89CdAa15182E3A56B6FDD1975f` |
-| PendingReceiptNFT (v2) | `0x1376f5e8338ca0962FE59CC28d0824E2F44E84e5` |
-| MockDOT | `0x6C242AdFF547877Ad6719b4785b45E7238d28D94` |
+| XCMAdapter (v2) | `0xF605c8B148A6Af6B6ABC049074fBFaa653219F46` |
+| EscrowVault (v2) | `0x19EA950c5468D8b2Da584F777124AC3a017d0cA5` |
+| PendingReceiptNFT (v2) | `0x2B6b31eF4e39565BDd1a914fA70B8451812F7210` |
+| MockDOT | `0x629FA1da2eafa71456F72e0A8dA208D25A9D6bd2` |
 
 XCM product ID (DOT -> Bifrost vDOT v1):
 `0xdd8f8d3075abdebf7d685b0ccf77a86310e9926882318d1daa27caa9dca971c9`
@@ -33,7 +33,7 @@ import { createPublicClient, http } from 'viem'
 const client = createPublicClient({ transport: http(process.env.ETH_RPC_URL!) })
 
 const products = await client.readContract({
-  address: '0x7a32F47C190BCa3eDC20683e138d90E91f2cb82B',
+  address: '0x2B29eDEdfbe33581673755d217Da600f92eA7CC6',
   abi: [{
     name: 'getAllProducts',
     type: 'function',
@@ -62,7 +62,7 @@ const products = await client.readContract({
 
 ```ts
 await walletClient.writeContract({
-  address: '0x1F6525b86EF8E32513Eb5F15528b553297ee3643',
+  address: '0x212349691746d378DC814AF70674474843F695BD',
   abi: [{
     name: 'deposit',
     type: 'function',
@@ -83,7 +83,7 @@ await walletClient.writeContract({
 
 ```ts
 await walletClient.writeContract({
-  address: '0x1F6525b86EF8E32513Eb5F15528b553297ee3643',
+  address: '0x212349691746d378DC814AF70674474843F695BD',
   abi: routerAbi,
   functionName: 'deposit',
   args: [
@@ -112,7 +112,7 @@ Or read directly:
 
 ```ts
 const receipt = await publicClient.readContract({
-  address: '0x1376f5e8338ca0962FE59CC28d0824E2F44E84e5',
+  address: '0x2B6b31eF4e39565BDd1a914fA70B8451812F7210',
   abi: receiptNFTAbi,
   functionName: 'receipts',
   args: [1n]
