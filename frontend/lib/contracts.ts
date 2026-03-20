@@ -227,6 +227,26 @@ export const receiptNFTAbi = [
   },
   {
     type: "event",
+    name: "ReceiptMinted",
+    inputs: [
+      { indexed: true, name: "tokenId", type: "uint256" },
+      { indexed: true, name: "to", type: "address" },
+      { indexed: true, name: "productId", type: "bytes32" },
+      { indexed: false, name: "amount", type: "uint256" },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
+    name: "ReceiptSettled",
+    inputs: [
+      { indexed: true, name: "tokenId", type: "uint256" },
+      { indexed: true, name: "finalHolder", type: "address" },
+    ],
+    anonymous: false,
+  },
+  {
+    type: "event",
     name: "Transfer",
     inputs: [
       { indexed: true, name: "from", type: "address" },

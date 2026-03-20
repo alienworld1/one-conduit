@@ -15,7 +15,7 @@ scripts/node_modules/
 # Frontend
 frontend/.next/
 frontend/node_modules/
-scripts
+scripts/*.mjs
 pop
 
 # OS
